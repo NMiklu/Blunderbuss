@@ -1,2 +1,2 @@
 #! /bin/bash
-g++ main.cpp position.cpp -o release
+g++ src/main.cpp src/position.cpp -o release
