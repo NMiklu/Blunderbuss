@@ -34,6 +34,8 @@ class Position {
     Bitboard pieces(PieceEnum x) const;
     void pretty(std::ostream& os) const;
     bool insert( LERF_Square sq, PieceEnum color, PieceEnum piece );
+    bool move( LERF_Square from, LERF_Square to );
+    bool valid_position() const;
     bool fen(std::string fen_string);
     void clear();
 
