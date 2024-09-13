@@ -74,5 +74,10 @@ int main( int argc, char** argv )
   assert( lol.insert( e4, Position::white_p, Position::pawn_p) );
   lol.pretty(std::cout);
   test_insert();
+
+  lol.clear();
+  lol.fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+  lol.pretty(std::cout);
+
   return 0;
 }

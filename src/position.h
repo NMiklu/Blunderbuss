@@ -8,8 +8,12 @@
 class Position {
   private:
     Bitboard  pieceBB[8];
-    uint8_t   castle;
-
+    uint8_t   castle_ability;
+    /* TODO
+    uint8_t   en_passant_target_square;
+    uint8_t   half_move_clock;   
+    uint8_t   full_move_counter; 
+    */
   public:
     enum PieceEnum {
       white_p,
