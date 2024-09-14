@@ -52,7 +52,8 @@ void test_insert() {
         Position::PieceEnum piece = static_cast<Position::PieceEnum>(i);
         for( int j = 0; j < 2; j++) {
           Position::PieceEnum color = static_cast<Position::PieceEnum>(j);
-          assert( lol.insert(square,color,piece) );
+          lol.set(square,color);
+          lol.set(square,piece);
           Bitboard color_and_piece_bb = lol.pieces(color) & lol.pieces(piece);
           assert( color_and_piece_bb != 0 );
           assert( ( LERF_SQUARE_TO_BB(square) & lol.pieces(piece)) != 0); 
@@ -71,7 +72,8 @@ int main( int argc, char** argv )
   test_square_rep();
   Position lol;
   lol.clear();
-  assert( lol.insert( e4, Position::white_p, Position::pawn_p) );
+  lol.set( e4, Position::white_p);
+  lol.set( e4, Position::pawn_p);
   lol.pretty(std::cout);
   test_insert();
 

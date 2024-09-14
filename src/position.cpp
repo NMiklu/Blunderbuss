@@ -69,21 +69,35 @@ void Position::pretty( std::ostream& os ) const {
     }
   }
 }
-bool Position::insert( LERF_Square sq, PieceEnum color, PieceEnum piece ) {
+void Position::set( LERF_Square sq, PieceEnum piece_p ) {
   /*
-    Overwrites <piece> and <color> onto the given square <sq>.
-    Returns True if inputs were valid and the representation
-    was updated. False otherwise.
+    Overwrites <piece> onto the given square <sq>.
   */
-  if( !(color == white_p || color == black_p) ) {
-    return false;
-  }
-  if( (piece == white_p || piece == black_p) ) {
-    return false;
-  }
+  
   Bitboard squareBB = LERF_SQUARE_TO_BB(sq);
-  this->pieceBB[color] |= squareBB;
-  this->pieceBB[piece] |= squareBB;
+  this->pieceBB[piece_p] |= squareBB;
+}
+bool Position::castle(uint8_t bits) {
+  /* Updates castle rights in position based on
+      <bits> which is a bitfield: refer to Position::CastleEnum
+  */
+  uint8_t invalid_rights_mask = 0xF0;
+  if( (invalid_rights_mask & bits) ) {
+    return false;
+  }
+  this->castle_ability = bits;
+  return true;
+}
+bool Position::halfmove() {
+  if( this->half_move_clock >= Position::MAX_HALF_MOVE ) {
+    return false;
+  }
+  this->half_move_clock+=1;
+  return true;
+}
+bool Position::fullmove() {
+  this->side_to_move = (this->side_to_move == white_p ? black_p : white_p);
+  this->full_move_counter+=1;
   return true;
 }
 bool Position::fen(std::string fen_string ) {
@@ -141,7 +155,8 @@ bool Position::fen(std::string fen_string ) {
           LERF_Square sq = static_cast<LERF_Square>( (8*rank_idx) + file_idx );
           PieceEnum color = (isWhitePiece ? white_p : black_p );
           PieceEnum piece = static_cast<PieceEnum>(Utility::index_char_in_str(value,(isWhitePiece ? white_piece : black_piece)) + 2);
-          this->insert(sq,color,piece);
+          this->set(sq,color);
+          this->set(sq,piece);
           file_idx++;
         } else {
           // Is not a white piece, black piece, nor a digit
@@ -236,33 +251,17 @@ bool Position::fen(std::string fen_string ) {
     <digit19>          ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
     <digit>            ::= '0' | <digit19>
   */
-  const std::string fullmove = fenv[5];
+  const std::string fullmove_str = fenv[5];
   const std::string digit19 = "123456789";
-  if( fullmove[0] == '0' || (!Utility::find_char_in_str(fullmove[0],digit19)))
+  if( fullmove_str[0] == '0' || (!Utility::find_char_in_str(fullmove_str[0],digit19)))
     return false;
-  for( size_t i = 0; i < fullmove.size(); i++ ) {
-    if(!Utility::find_char_in_str(fullmove[i],digit09))
+  for( size_t i = 0; i < fullmove_str.size(); i++ ) {
+    if(!Utility::find_char_in_str(fullmove_str[i],digit09))
       return false;
   }
-  this->full_move_counter = Utility::str_to_decimal_uint8(fullmove);
+  this->full_move_counter = Utility::str_to_decimal_uint8(fullmove_str);
 
   return true;
-}
-bool Position::move( LERF_Square from, LERF_Square to ) {
-  /*
-    Changes 'this' object to represent a move <from> -> <to>
-    on the chess board. Returns true if successful. False otherwise.
-  */
-  // TODO
-  return false;
-}
-bool Position::valid_position() const {
-  /*
-    Returns true if 'this' object represents
-    a valid chess position. False otherwise.
-  */
-  // TODO
-  return false;
 }
 void Position::clear() {
   /*
