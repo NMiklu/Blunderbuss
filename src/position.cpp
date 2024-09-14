@@ -3,6 +3,7 @@
 #include "misc.h"
 #include <string>
 #include <sstream>
+#include <cmath>
 
 #include <iostream> //DEBUG REMOVE LATER
 
@@ -20,20 +21,11 @@ void Position::pretty( std::ostream& os ) const {
   char board[64][3];
   for( int i = 0; i < 64; i++) {
     LERF_Square square = static_cast<LERF_Square>(i);
-    if( this->pieceBB[0] & LERF_SQUARE_TO_BB(square)) {
-      board[i][0] = 'W';
-      board[i][2] = '\0';
-    }
-    else if( this->pieceBB[1] & LERF_SQUARE_TO_BB(square)) {
-      board[i][0] = 'B';
-      board[i][2] = '\0';
-    } else {
-      board[i][0] = ' ';
-      board[i][1] = ' ';
-      board[i][2] = '\0';
-      continue;
-    }
-
+    board[i][0] = ((this->pieceBB[white_p] & LERF_SQUARE_TO_BB(square)) ? 'W':' ');
+    board[i][0] = ((this->pieceBB[black_p] & LERF_SQUARE_TO_BB(square)) ? 'B':board[i][0]);
+    board[i][1] = ' ';
+    board[i][2] = '\0';
+    
     for( int j = 2; j<8; j++) {
       if( this->pieceBB[j] & LERF_SQUARE_TO_BB(square)) {
         switch(j) {
@@ -101,7 +93,9 @@ bool Position::fen(std::string fen_string ) {
     Forsyth-Edwards Notation
     https://www.chessprogramming.org/Forsyth-Edwards_Notation
     Returns true if representation is updated.
-    False otherwise.
+    False if the fen is invalid.
+    WARNING -> does NOT revert changes to 'this' that were 
+                manipulated before failure.
   */
   /*
     <FEN> ::= <Piece Placement>
@@ -114,7 +108,7 @@ bool Position::fen(std::string fen_string ) {
   std::vector<std::string> fenv = Utility::tokenize(fen_string,' ');
   if( fenv.size() != 6 ) return false;
 
-  /* TODO
+  /* 
     <Piece Placement> ::=
         <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'
         <rank4>'/'<rank3>'/'<rank2>'/'<rank1>
@@ -156,35 +150,103 @@ bool Position::fen(std::string fen_string ) {
       }
     }
   }
-  
 
-
-
-  /* TODO
+  /* 
     <Side to move> ::= {'w' | 'b'}
   */
-  /* TODO
+  const std::string side = fenv[1];
+  if( side == "w" ) {
+    this->side_to_move = white_p;
+  } else if ( side == "b" ) {
+    this->side_to_move = black_p;
+  } else {
+    // Invalid color option
+    return false;
+  }
+
+  /*
     <Castling ability> ::= '-' | ['K'] | ['Q'] | ['k'] | ['q'] (1..4)
+  */
+
+  const std::string castling_token = fenv[2];
+  std::istringstream is(castling_token);
+  char value;
+  while( is >> value ) {
+    switch(value) {
+      case '-':
+        this->castle_ability = 0;
+        break;
+      case 'K':
+        this->castle_ability |= white_short_castle;
+        break;
+      case 'Q':
+        this->castle_ability |= white_long_castle;
+        break;
+      case 'k':
+        this->castle_ability |= black_short_castle;
+        break;
+      case 'q':
+        this->castle_ability |= black_long_castle;
+        break;
+      default:
+        return false;
+    }
+  }
+
+  /*
     <En passant target square> ::= '-' | <epsquare>
     <epsquare>   ::= <fileLetter><eprank>
     <fileLetter> ::= 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'
     <eprank>     ::= '3' | '6'
   */
-  /* TODO
+  const std::string epts = fenv[3];
+  if( epts == "-" ) {
+    this->en_passant_target_square = NO_SQUARE;
+  } else if (epts.size() == 2) {
+    char rank = epts[0];
+    char file = epts[1];
+    if( ((rank == '3' || rank == '6') && file >= 'a' && file <= 'h') ) {
+      int  rankidx = (int)rank - 49;
+      int  fileidx = (int)file - 97;
+      this->en_passant_target_square = static_cast<LERF_Square>((8*rankidx) + fileidx);
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+
+  /*
     <Halfmove Clock> ::= <digit> {<digit>}
     <digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
   */
-  /* TODO
+  const std::string half_move = fenv[4];
+  const std::string digit09 = "0123456789";
+  this->half_move_clock = 0;
+  for( size_t i = 0; i < half_move.size(); i++ ) {
+    if( !Utility::find_char_in_str(half_move[i],digit09) )
+      return false;
+  }
+  this->half_move_clock = Utility::str_to_decimal_uint8(half_move);
+
+
+  /*
     <Fullmove counter> ::= <digit19> {<digit>}
     <digit19>          ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
     <digit>            ::= '0' | <digit19>
   */
+  const std::string fullmove = fenv[5];
+  const std::string digit19 = "123456789";
+  if( fullmove[0] == '0' || (!Utility::find_char_in_str(fullmove[0],digit19)))
+    return false;
+  for( size_t i = 0; i < fullmove.size(); i++ ) {
+    if(!Utility::find_char_in_str(fullmove[i],digit09))
+      return false;
+  }
+  this->full_move_counter = Utility::str_to_decimal_uint8(fullmove);
 
-
-
-
-
-  return false;
+  return true;
 }
 bool Position::move( LERF_Square from, LERF_Square to ) {
   /*
@@ -211,8 +273,59 @@ void Position::clear() {
   for( int i = white_p; i <= king_p; i++ ) {
     this->pieceBB[i] = EMPTY_BB;
   }
+  this->en_passant_target_square = NO_SQUARE;
+  this->side_to_move    = white_p;
   this->castle_ability |= (white_short_castle);
   this->castle_ability |= (white_long_castle);
   this->castle_ability |= (black_short_castle);
   this->castle_ability |= (black_long_castle);
+  this->half_move_clock = 0;
+  this->full_move_counter = 1;
+}
+bool Position::check_rep() const {
+  /*
+    Returns true if representation is valid
+    false otherwise.
+
+    rep invariant:
+  pieceBB[white_p] & pieceBB[black_p] == 0
+  && forall (i,j):[pawn_p,...,king_p] (where i != j): pieceBB[i] & pieceBB[j] == 0
+  && forall i:[pawn_p,...,king_p] (!(pieceBB[i] & pieceBB[white_p] == 0 && pieceBB[i] & pieceBB[black_p] == 0))
+  && castle_ability < 16 && half_move_clock <= 50 && full_move_clock > 0
+  && en_passant_target_square: ([16,23] || [40,47] || 64)
+  && (side_to_move == black_p || side_to_move == white_p)
+  */
+
+  // There are white and black pieces on top of each other!
+  if( (pieceBB[white_p] & pieceBB[black_p]) != 0 ) return false;
+
+  for( int i = 2; i < 8; i++ ) {
+    if( !(pieceBB[i] & pieceBB[white_p] || pieceBB[i] & pieceBB[black_p]) )
+      // piece-type 'i' isn't claimed by the white or black pieces
+      return false;
+    for( int j = i+1; j < 8; j++ ) {
+      if((pieceBB[i] & pieceBB[j]) != 0)
+        // Multiple piece types on a single square
+        return false;
+    }
+  }
+
+  if( this->castle_ability >= 16 )
+    // Invalid castle value
+    return false;
+  if( this->half_move_clock > 50 )
+    //Impossible half_move_clock
+    return false;
+  if( this->full_move_counter == 0 )
+    // Invalid move clock
+    return false;
+  int sv = static_cast<int>(this->en_passant_target_square);
+  if( !((sv >= 16 && sv <= 23) || (sv >= 40 || sv <= 47) || (sv == 64)) )
+    // Invalid en passant square
+    return false;
+  if( !((this->side_to_move == white_p)||(this->side_to_move == black_p)))
+    // Invalid piece-type designated side to move
+    return false;
+
+  return true;
 }

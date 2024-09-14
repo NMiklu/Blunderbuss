@@ -76,7 +76,10 @@ int main( int argc, char** argv )
   test_insert();
 
   lol.clear();
-  lol.fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+  if (lol.fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"))
+    std::cout << "WOAH!!!" << std::endl;
+  if( lol.check_rep() )
+    std::cout << "check_rep success" << std::endl;
   lol.pretty(std::cout);
 
   return 0;

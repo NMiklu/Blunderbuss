@@ -6,14 +6,6 @@
 #include "representation.h"
 
 class Position {
-  private:
-    Bitboard  pieceBB[8];
-    uint8_t   castle_ability;
-    /* TODO
-    uint8_t   en_passant_target_square;
-    uint8_t   half_move_clock;   
-    uint8_t   full_move_counter; 
-    */
   public:
     enum PieceEnum {
       white_p,
@@ -42,6 +34,15 @@ class Position {
     bool valid_position() const;
     bool fen(std::string fen_string);
     void clear();
+    bool check_rep() const;
+
+  private:
+    Bitboard          pieceBB[8] = {0ULL};
+    enum LERF_Square  en_passant_target_square = NO_SQUARE;
+    enum PieceEnum    side_to_move             = white_p;
+    uint8_t           castle_ability = (white_long_castle & white_short_castle & black_long_castle & black_short_castle);
+    uint8_t           half_move_clock = 0;   
+    uint8_t           full_move_counter = 1; 
 
 };
 
