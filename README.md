@@ -1,5 +1,5 @@
 # Blunderbuss
-A Chess Engine that represents the gamestate of the chessboard using bitmaps
+A Chess Engine that represents the gamestate of the chessboard using bitboards.
 
 ## Goals
 - Make an efficient chess engine.
