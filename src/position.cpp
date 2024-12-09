@@ -7,10 +7,10 @@
 
 #include <iostream> //DEBUG REMOVE LATER
 
-Bitboard Position::pieces( PieceEnum x ) const {
+Bitboard Position::pieces( Piece x ) const {
   /* 
     Returns 64 bit int-type representing 
-    the pieces specified by PieceEnum <x>
+    the pieces specified by Piece <x>
    */
   return pieceBB[x];
 }
@@ -20,14 +20,14 @@ void Position::pretty( std::ostream& os ) const {
   */
   char board[64][3];
   for( int i = 0; i < 64; i++) {
-    LERF_Square square = static_cast<LERF_Square>(i);
-    board[i][0] = ((this->pieceBB[white_p] & LERF_SQUARE_TO_BB(square)) ? 'W':' ');
-    board[i][0] = ((this->pieceBB[black_p] & LERF_SQUARE_TO_BB(square)) ? 'B':board[i][0]);
+    Square square = static_cast<Square>(i);
+    board[i][0] = ((this->pieceBB[white_p] & SQUARE_TO_BB(square)) ? 'W':' ');
+    board[i][0] = ((this->pieceBB[black_p] & SQUARE_TO_BB(square)) ? 'B':board[i][0]);
     board[i][1] = ' ';
     board[i][2] = '\0';
     
     for( int j = 2; j<8; j++) {
-      if( this->pieceBB[j] & LERF_SQUARE_TO_BB(square)) {
+      if( this->pieceBB[j] & SQUARE_TO_BB(square)) {
         switch(j) {
           case pawn_p:
             board[i][1] = 'p';
@@ -69,17 +69,17 @@ void Position::pretty( std::ostream& os ) const {
     }
   }
 }
-void Position::set( LERF_Square sq, PieceEnum piece_p ) {
+void Position::set( Square sq, Piece piece_p ) {
   /*
     Overwrites <piece> onto the given square <sq>.
   */
   
-  Bitboard squareBB = LERF_SQUARE_TO_BB(sq);
+  Bitboard squareBB = SQUARE_TO_BB(sq);
   this->pieceBB[piece_p] |= squareBB;
 }
 bool Position::castle(uint8_t bits) {
   /* Updates castle rights in position based on
-      <bits> which is a bitfield: refer to Position::CastleEnum
+      <bits> which is a bitfield: refer to CastleMask
   */
   uint8_t invalid_rights_mask = 0xF0;
   if( (invalid_rights_mask & bits) ) {
@@ -152,9 +152,9 @@ bool Position::fen(std::string fen_string ) {
         bool isWhitePiece = Utility::find_char_in_str( value, white_piece);
         bool isBlackPiece = Utility::find_char_in_str( value, black_piece);
         if( isWhitePiece || isBlackPiece ) {
-          LERF_Square sq = static_cast<LERF_Square>( (8*rank_idx) + file_idx );
-          PieceEnum color = (isWhitePiece ? white_p : black_p );
-          PieceEnum piece = static_cast<PieceEnum>(Utility::index_char_in_str(value,(isWhitePiece ? white_piece : black_piece)) + 2);
+          Square sq = static_cast<Square>( (8*rank_idx) + file_idx );
+          Piece color = (isWhitePiece ? white_p : black_p );
+          Piece piece = static_cast<Piece>(Utility::index_char_in_str(value,(isWhitePiece ? white_piece : black_piece)) + 2);
           this->set(sq,color);
           this->set(sq,piece);
           file_idx++;
@@ -223,7 +223,7 @@ bool Position::fen(std::string fen_string ) {
     if( ((rank == '3' || rank == '6') && file >= 'a' && file <= 'h') ) {
       int  rankidx = (int)rank - 49;
       int  fileidx = (int)file - 97;
-      this->en_passant_target_square = static_cast<LERF_Square>((8*rankidx) + fileidx);
+      this->en_passant_target_square = static_cast<Square>((8*rankidx) + fileidx);
     } else {
       return false;
     }
