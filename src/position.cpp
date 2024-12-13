@@ -14,6 +14,51 @@ Bitboard Position::pieces( Piece x ) const {
    */
   return pieceBB[x];
 }
+
+Bitboard Position::black_pieces() const {
+  return pieceBB[black_p];
+}
+Bitboard Position::black_pawns() const {
+  return (pieceBB[black_p] & pieceBB[pawn_p]);
+}
+Bitboard Position::black_rooks() const {
+  return (pieceBB[black_p] & pieceBB[rook_p]);
+}
+Bitboard Position::black_knights() const {
+  return (pieceBB[black_p] & pieceBB[knight_p]);
+}
+Bitboard Position::black_bishops() const {
+  return (pieceBB[black_p] & pieceBB[bishop_p]);
+}
+Bitboard Position::black_queens() const {
+  return (pieceBB[black_p] & pieceBB[queen_p]);
+}
+Bitboard Position::black_king() const {
+  return (pieceBB[black_p] & pieceBB[king_p]);
+}
+
+Bitboard Position::white_pieces() const {
+  return pieceBB[white_p];
+}
+Bitboard Position::white_pawns() const {
+  return (pieceBB[white_p] & pieceBB[pawn_p]);
+}
+Bitboard Position::white_rooks() const {
+  return (pieceBB[white_p] & pieceBB[rook_p]);
+}
+Bitboard Position::white_knights() const {
+  return (pieceBB[white_p] & pieceBB[knight_p]);
+}
+Bitboard Position::white_bishops() const {
+  return (pieceBB[white_p] & pieceBB[bishop_p]);
+}
+Bitboard Position::white_queens() const {
+  return (pieceBB[white_p] & pieceBB[queen_p]);
+}
+Bitboard Position::white_king() const {
+  return (pieceBB[white_p] & pieceBB[king_p]);
+}
+
 void Position::pretty( std::ostream& os ) const {
   /*
     Outputs ASCII chess board to ostream <os>
@@ -77,7 +122,7 @@ void Position::set( Square sq, Piece piece_p ) {
   Bitboard squareBB = SQUARE_TO_BB(sq);
   this->pieceBB[piece_p] |= squareBB;
 }
-bool Position::castle(uint8_t bits) {
+bool Position::set_castle_bits(uint8_t bits) {
   /* Updates castle rights in position based on
       <bits> which is a bitfield: refer to CastleMask
   */
@@ -88,6 +133,14 @@ bool Position::castle(uint8_t bits) {
   this->castle_ability = bits;
   return true;
 }
+bool Position::castle(uint8_t bits) {
+  /* returns true if the bits specified by <bits> are set
+      in the castle data.
+      false otherwise 
+      bits are best specified by CastleMask enum -> refer to representation.h*/
+  return this->castle_ability & bits == bits;
+}
+
 bool Position::halfmove() {
   if( this->half_move_clock >= Position::MAX_HALF_MOVE ) {
     return false;
@@ -327,4 +380,8 @@ bool Position::check_rep() const {
     return false;
 
   return true;
+}
+
+Sqaure Position::en_passant_target() const {
+  return this->en_passant_target_square;
 }

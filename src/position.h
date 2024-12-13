@@ -13,14 +13,33 @@ class Position {
     ~Position() = default;
 
     Bitboard pieces(Piece x) const;
+
+    Bitboard white_pieces() const;
+    Bitboard white_pawns() const;
+    Bitboard white_rooks() const;
+    Bitboard white_knights() const;
+    Bitboard white_bishops() const;
+    Bitboard white_queens() const;
+    Bitboard white_king() const;
+
+    Bitboard black_pieces() const;
+    Bitboard black_pawns() const;
+    Bitboard black_rooks() const;
+    Bitboard black_knights() const;
+    Bitboard black_bishops() const;
+    Bitboard black_queens() const;
+    Bitboard black_king() const;
+
     void pretty(std::ostream& os) const;
     void set( Square sq, Piece piece_p );
+    bool set_castle_bits(uint8_t bits);
     bool castle(uint8_t bits);
     bool halfmove();
     bool fullmove();
     bool fen(std::string fen_string);
     void clear();
     bool check_rep() const;
+    Square en_passant_target() const;
 
   private:
     Bitboard          pieceBB[8] = {0ULL};

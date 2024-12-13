@@ -74,24 +74,45 @@ enum CastleMask : uint8_t {
   black_long_castle   = 0b0001
 };
 
-class Move {
-  enum Piece  _color;
-  enum Square _initial;
-  enum Square _final;
-  enum Piece  _piece;
+struct Move {
+  typedef enum {
+    INITIAL_SQUARE = 0xFC00,
+    FINAL_SQUARE   = 0x03F0,
+    SPECIAL_FLAG   = 0x000F // Promote, Castle, En Passant
+  }MoveMask;
+  typedef enum {
+    /*
+      NO FLAG      = 0000 0000
+      Flag on      = 0000 1000
+      Promo knight = 0000 1001
+      Promo bishop = 0000 1010
+      promo rook   = 0000 1011
+      promo queen  = 0000 1100
+      long castle  = 0000 1101
+      short castle = 0000 1110
+      en_passant   = 0000 1111
+    */
+    NO_FLAG        = 0x00,
+    PROMOTE_KNIGHT = 0b00001001,
+    PROMOTE_BISHOP = 0b00001010,
+    PROMOTE_ROOK   = 0b00001011,
+    PROMOTE_QUEEN  = 0b00001100,
+    LONG_CASTLE    = 0b00001101,
+    SHORT_CASTLE   = 0b00001110,
+    EN_PASSANT     = 0b00001111
+  }MoveFlag;
+
+  Move(enum Square init, enum Square final, MoveFlag flag);
+  Move()  = default;
+  ~Move() = default;
+
+  enum Square get_inital_square();
+  enum Square get_final_square();
+  MoveFlag get_flag();
+
+  uint16_t     _move_data;
 };
 
-class CastleMove : Move {
-  enum CastleMask _castle;
-};
-
-class EnPassantMove : Move {
-  enum Square _enpassant_target;
-};
-
-class PromoteMove : Move {
-  enum Piece _promoted_piece;
-};
 
 inline Bitboard SQUARE_TO_BB(Square sq) {
   return 1ULL << sq;
