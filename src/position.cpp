@@ -122,16 +122,12 @@ void Position::set( Square sq, Piece piece_p ) {
   Bitboard squareBB = SQUARE_TO_BB(sq);
   this->pieceBB[piece_p] |= squareBB;
 }
-bool Position::set_castle_bits(uint8_t bits) {
-  /* Updates castle rights in position based on
-      <bits> which is a bitfield: refer to CastleMask
-  */
-  uint8_t invalid_rights_mask = 0xF0;
-  if( (invalid_rights_mask & bits) ) {
-    return false;
+void Engine::remove(Square sq) {
+  /* clears Square <sq> from any pieces*/
+  Bitboard tau = (~SQUARE_TO_BB(sq))
+  for( int i = 0; i < 8; i++ ) {
+    this->pieceBB[i] &= tau;
   }
-  this->castle_ability = bits;
-  return true;
 }
 bool Position::castle(uint8_t bits) {
   /* returns true if the bits specified by <bits> are set
@@ -139,6 +135,24 @@ bool Position::castle(uint8_t bits) {
       false otherwise 
       bits are best specified by CastleMask enum -> refer to representation.h*/
   return this->castle_ability & bits == bits;
+}
+bool Position::revoke_castle(Piece color) {
+  /* Revokes the castle rights in 'this' position of the side
+    specified by <color> (which should be white_p or black_p) 
+    returns true if successful
+    false otherwise
+  */
+  switch(color) {
+    case white_p:
+      this->castle_ability &= (~(white_long_castle | white_short_castle));
+      break;
+    case black_p:
+      this->castle_ability &= (~(black_long_castle | black_short_castle));
+      break;
+    default:
+      return false;
+  }
+  return true;
 }
 
 bool Position::halfmove() {
@@ -384,4 +398,25 @@ bool Position::check_rep() const {
 
 Sqaure Position::en_passant_target() const {
   return this->en_passant_target_square;
+}
+
+Piece Position::piece_at_square( Square sq ) {
+  Bitboard tau = SQUARE_TO_BB(sq);
+  for( int i = pawn_p; i < none_p; i++ ){
+    if( this->pieceBB[i] & tau )
+      return static_cast<Piece>(i);
+  }
+  return none_p;
+}
+
+Position* Position::copy(const Position& pos) {
+  Position* copy_ = new Position::Position();
+  for( unsigned short i = 0; i < 8; i++ ) {
+    copy_->pieceBB[i] = pos.pieceBB[i];
+  }
+  copy_->en_passant_target_square = pos.en_passant_target_square;
+  copy_->castle_ability = pos.castle_ability;
+  copy_->half_move_clock = pos.half_move_clock;
+  copy_->full_move_counter = pos.full_move_counter;
+  return copy_;
 }

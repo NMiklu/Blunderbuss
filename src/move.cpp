@@ -14,14 +14,14 @@ Move::Move(enum Square init, enum Square final, MoveFlag flag) {
   this->_move_data |= flag;
 }
 
-enum Square Move::get_inital_square() {
+enum Square Move::inital_square() {
   uint16_t temp = this->_move_data;
   temp >> 10;
   int cast_item = (int) temp;
   enum Square sq = static_cast<Square>(cast_item);
   return sq;
 }
-enum Square Move::get_final_square() {
+enum Square Move::final_square() {
   uint16_t temp = this->_move_data;
   temp << 6;
   temp >> 10;
@@ -29,6 +29,6 @@ enum Square Move::get_final_square() {
   enum Square sq = static_cast<Square>(cast_item);
   return sq;
 }
-MoveFlag Move::get_flag() {
+MoveFlag Move::flag() {
   return static_cast<MoveFlag>((this->_move_data & SPECIAL_FLAG));
 }

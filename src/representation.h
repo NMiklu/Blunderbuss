@@ -32,6 +32,24 @@ constexpr Bitboard A8_BB     = (RANK_8_BB & FILE_A_BB);
 constexpr Bitboard H8_BB     = (RANK_8_BB & FILE_H_BB);
 constexpr Bitboard CORNER_BB = A1_BB | H1_BB | A8_BB | H8_BB;
 
+constexpr Bitboard NORTH_BB      = ~(RANK_8_BB);
+constexpr Bitboard EAST_BB       = ~(FILE_H_BB);
+constexpr Bitboard WEST_BB       = ~(FILE_A_BB);
+constexpr Bitboard SOUTH_BB      = ~(RANK_1_BB);
+constexpr Bitboard NORTH_EAST_BB = ~(RANK_8_BB & FILE_H_BB);
+constexpr Bitboard NORTH_WEST_BB = ~(RANK_8_BB & FILE_A_BB);
+constexpr Bitboard SOUTH_EAST_BB = ~(RANK_1_BB & FILE_H_BB);
+constexpr Bitboard SOUTH_WEST_BB = ~(RANK_1_BB & FILE_A_BB);
+constexpr Bitboard NORTH_NORTH_EAST_BB = ~(RANK_8_BB & RANK_7_BB & FILE_H_BB);
+constexpr Bitboard NORTH_NORTH_WEST_BB = ~(RANK_8_BB & RANK_7_BB & FILE_A_BB);
+constexpr Bitboard NORTH_EAST_EAST_BB = ~(RANK_8_BB & FILE_G_BB & FILE_H_BB);
+constexpr Bitboard SOUTH_EAST_EAST_BB = ~(RANK_1_BB & FILE_G_BB & FILE_H_BB);
+constexpr Bitboard SOUTH_SOUTH_EAST_BB = ~(RANK_1_BB & RANK_2_BB & FILE_H_BB);
+constexpr Bitboard SOUTH_SOUTH_WEST_BB = ~(RANK_1_BB & RANK_2_BB & FILE_A_BB);
+constexpr Bitboard SOUTH_WEST_WEST_BB = ~(RANK_1_BB & FILE_A_BB & FILE_B_BB);
+constexpr Bitboard NORTH_WEST_WEST_BB = ~(RANK_8_BB & FILE_A_BB & FILE_B_BB);
+
+
 
 enum Square : int {
   // Little Endian rank-file
@@ -53,18 +71,32 @@ enum Compass : int {
   NORTH_WEST = NORTH + WEST,
   NORTH_EAST = NORTH + EAST,
   SOUTH_WEST = SOUTH + WEST,
-  SOUTH_EAST = SOUTH + EAST
+  SOUTH_EAST = SOUTH + EAST,
+  
+  /*Knight Moves*/
+  NORTH_NORTH_EAST = NORTH + NORTH_EAST,
+  NORTH_NORTH_WEST = NORTH + NORTH_WEST,
+
+  NORTH_EAST_EAST  = NORTH_EAST + EAST,
+  SOUTH_EAST_EAST  = SOUTH_EAST + EAST,
+
+  SOUTH_SOUTH_EAST = SOUTH + SOUTH_EAST,
+  SOUTH_SOUTH_WEST = SOUTH + SOUTH_WEST,
+
+  SOUTH_WEST_WEST  = SOUTH_WEST + WEST,
+  NORTH_WEST_WEST  = NORTH_WEST + WEST
 };
 
 enum Piece {
-      white_p,
-      black_p,
-      pawn_p,
-      knight_p,
-      bishop_p,
-      rook_p,
-      queen_p,
-      king_p
+  white_p,
+  black_p,
+  pawn_p,
+  knight_p,
+  bishop_p,
+  rook_p,
+  queen_p,
+  king_p,
+  none_p
 };
 
 enum CastleMask : uint8_t {
@@ -106,9 +138,9 @@ struct Move {
   Move()  = default;
   ~Move() = default;
 
-  enum Square get_inital_square();
-  enum Square get_final_square();
-  MoveFlag get_flag();
+  enum Square inital_square();
+  enum Square final_square();
+  MoveFlag flag();
 
   uint16_t     _move_data;
 };

@@ -5,12 +5,14 @@
 #include <string>
 #include "representation.h"
 
-class Position {
-  public:
-    static const uint8_t MAX_HALF_MOVE = 50;
+struct Position {
 
     Position()  = default;
     ~Position() = default;
+
+
+    static const uint8_t MAX_HALF_MOVE = 50;
+    static Position* copy(const Position& pos);
 
     Bitboard pieces(Piece x) const;
 
@@ -32,23 +34,25 @@ class Position {
 
     void pretty(std::ostream& os) const;
     void set( Square sq, Piece piece_p );
-    bool set_castle_bits(uint8_t bits);
+    void remove(Square sq);
     bool castle(uint8_t bits);
+    bool revoke_castle(Piece color);
     bool halfmove();
     bool fullmove();
     bool fen(std::string fen_string);
     void clear();
     bool check_rep() const;
     Square en_passant_target() const;
+    Piece piece_at_square( Square sq );
 
-  private:
+
+    //TODO Piece/Square cache
     Bitboard          pieceBB[8] = {0ULL};
     enum Square       en_passant_target_square = NO_SQUARE;
     enum Piece        side_to_move = white_p;
     uint8_t           castle_ability = (white_long_castle | white_short_castle | black_long_castle | black_short_castle);
     uint8_t           half_move_clock = 0;   
     uint8_t           full_move_counter = 1; 
-
 };
 
 #endif

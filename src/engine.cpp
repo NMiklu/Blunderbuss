@@ -12,323 +12,175 @@ bool Engine::square_is_corner( enum Square sq ) {
   return false;
 }
 
-Piece Engine::engine_color() {
-  return this->pos->side_to_move;
+Piece Engine::engine_color(const Position& pos) {
+  return pos.side_to_move;
 }
 
-Piece Engine::opponent_color() {
-  return Engine::engine_color() == white_p ? black_p : white_p;
+Piece Engine::opponent_color(const Position& pos) {
+  return Engine::engine_color(pos) == white_p ? black_p : white_p;
 }
 
-Bitboard Engine::engine_pieces() {
-  return this->pos->pieces(Engine::engine_color());
+Bitboard Engine::engine_pieces(const Position& pos) {
+  return pos.pieces(Engine::engine_color());
 }
 
-Bitboard Engine::opponent_pieces() {
-  return this->pos->pieces(Engine::opponent_color());
+Bitboard Engine::opponent_pieces(const Position& pos) {
+  return pos.pieces(Engine::opponent_color());
 }
 
 
 
-void Engine::propagate_compass_on_bitboard(Bitboard& bb, Square initial_sq, Compass direction) {
+void Engine::propagate_compass_on_position(const Position& pos, Bitboard& bb, Square initial_sq, Compass direction) {
   enum Square next_square = initial_sq + direction;
-  Bitboard opponent_bb = opponent_pieces();
-  Bitboard engine_bb = engine_pieces();
-  while( !Engine::square_is_edge(next_square) && !(opponent_bb & SQUARE_TO_BB(next_square)) ) {
-    if( SQUARE_TO_BB(next_square) & engine_bb) return bb; // Do not capture your own piece!
-    bb |= SQUARE_TO_BB(next_square);
+  Bitboard opponent_bb = opponent_pieces(pos);
+  Bitboard engine_bb = engine_pieces(pos);
+  while( !Engine::square_is_edge(next_square) ) {
+    Bitboard next_sq_bb = SQUARE_TO_BB(next_square);
+    if( next_sq_bb & engine_bb) return bb; // Do not capture your own piece!
+    if( opponent_bb & next_sq_bb ) break;
+    bb |= next_sq_bb;
     next_square += direction;
   }
   bb |= SQUARE_TO_BB(next_square); // Make sure to include the edge square or 'first' enemy piece
 }
 
-Bitboard Engine::generate_bishop_move_pattern_bitboard( enum Square sq ) {
+Bitboard Engine::pseudo_legal_bishop_move_bitboard(const Position& pos, enum Square sq ) {
   if( sq == NO_SQUARE ) return EMPTY_BB;
   Bitboard pattern = EMPTY_BB;
-  Bitboard sq_bb = SQUARE_TO_BB(sq);
-  bool NE = false;
-  bool NW = false;
-  bool SE = false;
-  bool SW = false;
-  if( Engine::square_is_edge(sq) ) {
-    if( Engine::square_is_corner(sq) ) {
-      if( sq == a1 ) NE = true;
-      else if( sq ==  h1 ) NW = true;
-      else if( sq == a8 ) SE = true;
-      else if( sq == h8 ) SW = true;
-    } else { // Square is not a corner, but is an edge!
-      if( sq_bb & FILE_A_BB ) {
-        NE = true;
-        SE = true;
-      }
-      else if( sq_bb & FILE_H_BB) {
-        NW = true;
-        SW = true;
-      }
-      else if( sq_bb & RANK_1_BB) {
-        NE = true;
-        NW = true;
-      }
-      else if( sq_BB & RANK_8_BB ) {
-        SE = true;
-        SW = true;
-      }
-    }
 
-  } else { // Square is not on the edge of the board!
-    NE = true;
-    NW = true;
-    SE = true;
-    SW = true;
+  if( Engine::check_direction(sq, NORTH_EAST) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,NORTH_EAST);
   }
-
-  if( NE ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,NORTH_EAST);
+  if( Engine::check_direction(sq, NORTH_WEST) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,NORTH_WEST);
   }
-  if( NW ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,NORTH_WEST);
+  if( Engine::check_direction(sq,SOUTH_EAST) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,SOUTH_EAST);
   }
-  if( SE ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,SOUTH_EAST);
-  }
-  if( SW ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,SOUTH_WEST);
+  if( Engine::check_direction(sq,SOUTH_WEST) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,SOUTH_WEST);
   }
 
   Bitboard my_pieces = engine_pieces();
   return pattern & (~my_piece);
 }
-Bitboard Engine::generate_rook_move_pattern_bitboard( enum Square sq ) {
+Bitboard Engine::pseudo_legal_rook_move_bitboard( const Position& pos, enum Square sq ) {
   if( sq == NO_SQUARE ) return EMPTY_BB;
   Bitboard pattern = EMPTY_BB;
-  Bitboard sq_bb = SQUARE_TO_BB(sq);
-  bool N = true;
-  bool W = true;
-  bool E = true;
-  bool S = true;
-  if( Engine::square_is_edge(sq) ) {
-    if( sq_bb & FILE_A_BB) {
-      W = false;
-    }
-    if( sq_bb & FILE_H_BB) {
-      E = false;
-    }
-    if( sq_bb & RANK_1_BB) {
-      S = false;
-    }
-    if( sq_bb & RANK_8_BB) {
-      N = false;
-    }
+
+  if( Engine::check_direction(sq,NORTH) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,NORTH);
   }
-  if( N ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,NORTH);
+  if( Engine::check_direction(sq,SOUTH) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,SOUTH);
   }
-  if( S ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,SOUTH);
+  if( Engine::check_direction(sq,EAST) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,EAST);
   }
-  if( E ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,EAST);
-  }
-  if( W ) {
-    Engine::propagate_compass_on_bitboard(pattern,sq,WEST);
+  if( Engine::check_direction(sq,WEST) ) {
+    Engine::propagate_compass_on_position(pos,pattern,sq,WEST);
   }
 
   return pattern;
 }
 
-Bitboard Engine::generate_knight_move_pattern_bitboard(enum Square sq) {
+Bitboard Engine::pseudo_legal_knight_move_bitboard( const Position& pos, enum Square sq) {
   /*
-    Below diagram relates the according squares to
-    how they're named in this function:
     +---+---+---+---+---+---+---+
-    |   |   |sq8|   |sq1|   |   |
+    |   |   |NNW|   |NNE|   |   |
     +---+---+---+---+---+---+---+
-    |   |sq7|   |   |   |sq2|   |
+    |   |NWW|   |   |   |NEE|   |
     +---+---+---+---+---+---+---+
     |   |   |   | K |   |   |   |
     +---+---+---+---+---+---+---+
-    |   |sq6|   |   |   |sq3|   |
+    |   |SWW|   |   |   |SEE|   |
     +---+---+---+---+---+---+---+
-    |   |   |sq5|   |sq4|   |   |
+    |   |   |SSW|   |SSE|   |   |
     +---+---+---+---+---+---+---+
   */
   if( sq == NO_SQUARE ) return EMPTY_BB;
   Bitboard pattern = EMPTY_BB;
-  Bitboard sq_bb = SQUARE_TO_BB(sq);
-  bool sq1 = true;
-  bool sq2 = true;
-  bool sq3 = true;
-  bool sq4 = true;
-  bool sq5 = true;
-  bool sq6 = true;
-  bool sq7 = true;
-  bool sq8 = true;
 
-  if( sq_bb & RANK_1_BB){
-    sq3 = false;
-    sq4 = false;
-    sq5 = false;
-    sq6 = false;
+  if( Engine::check_direction(sq,NORTH_NORTH_EAST) ) {
+    pattern |= SQUARE_TO_BB(sq+NORTH_NORTH_EAST);
   }
-  else if( sq_bb & RANK_2_BB ) {
-    sq5 = false;
-    sq4 = false;
+  if( Engine::check_direction(sq,NORTH_NORTH_WEST) ) {
+    pattern |= SQUARE_TO_BB(sq+NORTH_NORTH_WEST);
   }
-  else if(sq_bb & RANK_7_BB) {
-    sq1 = false;
-    sq8 = false;
-  } 
-  else if( sq_bb & RANK_8_BB) {
-    sq1 = false;
-    sq2 = false;
-    sq7 = false;
-    sq8 = false;
+  if( Engine::check_direction(sq,NORTH_EAST_EAST) ) {
+    pattern |= SQUARE_TO_BB(sq+NORTH_EAST_EAST);
+  }
+  if( Engine::check_direction(sq,SOUTH_EAST_EAST) ) {
+    pattern |= SQUARE_TO_BB(sq+SOUTH_EAST_EAST);
+  }
+  if( Engine::check_direction(sq,SOUTH_SOUTH_EAST) ) {
+    pattern |= SQUARE_TO_BB(sq+SOUTH_SOUTH_EAST);
+  }
+  if( Engine::check_direction(sq,SOUTH_SOUTH_WEST) ) {
+    pattern |= SQUARE_TO_BB(sq+SOUTH_SOUTH_WEST);
+  }
+  if( Engine::check_direction(sq,SOUTH_WEST_WEST) ) {
+    pattern |= SQUARE_TO_BB(sq+SOUTH_WEST_WEST);
+  }
+  if( Engine::check_direction(sq,NORTH_WEST_WEST) ) {
+    pattern |= SQUARE_TO_BB(sq+NORTH_WEST_WEST);
   }
 
-  if( sq_bb & FILE_A_BB ) {
-    sq8 = false;
-    sq7 = false;
-    sq6 = false;
-    sq5 = false;
-  }
-  else if (sq_bb & FILE_B_BB) {
-    sq7 = false;
-    sq6 = false;
-  }
-  else if( sq_bb & FILE_H_BB) {
-    sq1 = false;
-    sq2 = false;
-    sq3 = false;
-    sq4 = false;
-  }
-  else if( sq_bb & FILE_G_BB) {
-    sq2 = false;
-    sq3 = false;
-  }
-
-  if( sq1 ) {
-    pattern |= SQUARE_TO_BB(sq+NORTH+NORTH_EAST);
-  }
-  if( sq2 ) {
-    pattern |= SQUARE_TO_BB(sq+EAST+NORTH_EAST);
-  }
-  if( sq3 ) {
-    pattern |= SQUARE_TO_BB(sq+EAST+SOUTH_EAST);
-  }
-  if( sq4 ) {
-    pattern |= SQUARE_TO_BB(sq+SOUTH+SOUTH_EAST);
-  }
-  if( sq5 ) {
-    pattern |= SQUARE_TO_BB(sq+SOUTH+SOUTH_WEST);
-  }
-  if( sq6 ) {
-    pattern |= SQUARE_TO_BB(sq+WEST+SOUTH_WEST);
-  }
-  if( sq7 ) {
-
-    pattern |= SQUARE_TO_BB(sq+WEST+NORTH_WEST);
-  }
-  if( sq8 ) {
-    pattern |= SQUARE_TO_BB(sq+NORTH+NORTH_WEST);
-  }
+  pattern &= ~(Engine::engine_pieces(pos)); // Dont want to capture own pieces!!!
 
   return pattern;
 }
-Bitboard Engine::generate_king_move_pattern_bitboard(enum Square sq) {
+Bitboard Engine::pseudo_legal_king_move_bitboard( const Position& pos, enum Square sq) {
   // DOES NOT ACCOUNT FOR CASTLING!!!
   if( sq == NO_SQUARE ) return EMPTY_BB;
   Bitboard pattern = EMPTY_BB;
-  Bitboard sq_bb = SQUARE_TO_BB(sq);
-  bool N = true;
-  bool NE = true;
-  bool NW = true;
-  bool E = true;
-  bool W = true;
-  bool SE = true;
-  bool SW = true;
-  bool S = true;
 
-  if( sq_bb & RANK_1_BB ) {
-    S = false;
-    SW = false;
-    SE = false;
-  }
-  else if( sq_bb & RANK_8_BB) {
-    N = false;
-    NE = false;
-    NW = false;
-  }
+  if( Engine::check_direction(sq,NORTH) )  pattern |= SQUARE_TO_BB(sq+NORTH);
+  if( Engine::check_direction(sq,EAST) )  pattern |= SQUARE_TO_BB(sq+EAST);
+  if( Engine::check_direction(sq,WEST) )  pattern |= SQUARE_TO_BB(sq+WEST);
+  if( Engine::check_direction(sq,SOUTH) )  pattern |= SQUARE_TO_BB(sq+SOUTH);
+  if( Engine::check_direction(sq,NORTH_WEST) )  pattern |= SQUARE_TO_BB(sq+NORTH_WEST);
+  if( Engine::check_direction(sq,NORTH_EAST) )  pattern |= SQUARE_TO_BB(sq+NORTH_EAST);
+  if( Engine::check_direction(sq,SOUTH_EAST) )  pattern |= SQUARE_TO_BB(sq+SOUTH_EAST);
+  if( Engine::check_direction(sq,SOUTH_WEST) )  pattern |= SQUARE_TO_BB(sq+SOUTH_WEST);
 
-  if( sq_bb & FILE_A_BB) {
-    W = false;
-    NW = false;
-    SW = false;
-  }
-  else if( sq_bb & FILE_H_BB) {
-    E = false;
-    NE = false;
-    SE = false;
-  }
-
-  if( N )  pattern |= SQUARE_TO_BB(sq+NORTH);
-  if( E )  pattern |= SQUARE_TO_BB(sq+EAST);
-  if( W )  pattern |= SQUARE_TO_BB(sq+WEST);
-  if( S )  pattern |= SQUARE_TO_BB(sq+SOUTH);
-  if( NW )  pattern |= SQUARE_TO_BB(sq+NORTH_WEST);
-  if( NE )  pattern |= SQUARE_TO_BB(sq+NORTH_EAST);
-  if( SE )  pattern |= SQUARE_TO_BB(sq+SOUTH_EAST);
-  if( SW )  pattern |= SQUARE_TO_BB(sq+SOUTH_WEST);
+  pattern &= ~(Engine::engine_pieces(pos)); // Dont want to capture our own pieces!
 
   return pattern;
 }
-Bitboard Engine::generate_queen_move_pattern_bitboard(enum Square sq) {
+Bitboard Engine::pseudo_legal_queen_move_bitboard( const Position& pos, enum Square sq) {
   if( sq == NO_SQUARE ) return EMPTY_BB;
   Bitboard pattern = EMPTY_BB;
-  Bitboard sq_bb = SQUARE_TO_BB(sq);
-  bool N = true;
-  bool NE = true;
-  bool NW = true;
-  bool E = true;
-  bool W = true;
-  bool SE = true;
-  bool SW = true;
-  bool S = true;
 
-  if( sq_bb & RANK_1_BB ) {
-    S = false;
-    SW = false;
-    SE = false;
+  if( Engine::check_direction(sq,NORTH) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,NORTH);
   }
-  else if( sq_bb & RANK_8_BB) {
-    N = false;
-    NE = false;
-    NW = false;
+  if( Engine::check_direction(sq,EAST) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,EAST);
   }
-
-  if( sq_bb & FILE_A_BB) {
-    W = false;
-    NW = false;
-    SW = false;
+  if( Engine::check_direction(sq,WEST) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,WEST);
   }
-  else if( sq_bb & FILE_H_BB) {
-    E = false;
-    NE = false;
-    SE = false;
+  if( Engine::check_direction(sq,SOUTH) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,SOUTH);
   }
-
-  if( N )  Engine::propagate_compass_on_bitboard(pattern,sq,NORTH);
-  if( E )  Engine::propagate_compass_on_bitboard(pattern,sq,EAST);
-  if( W )  Engine::propagate_compass_on_bitboard(pattern,sq,WEST);
-  if( S )  Engine::propagate_compass_on_bitboard(pattern,sq,SOUTH);
-  if( NE ) Engine::propagate_compass_on_bitboard(pattern,sq,NORTH_EAST);
-  if( NW ) Engine::propagate_compass_on_bitboard(pattern,sq,NORTH_WEST);
-  if( SE ) Engine::propagate_compass_on_bitboard(pattern,sq,SOUTH_EAST);
-  if( SW ) Engine::propagate_compass_on_bitboard(pattern,sq,SOUTH_WEST);
+  if( Engine::check_direction(sq,NORTH_EAST) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,NORTH_EAST);
+  }
+  if( Engine::check_direction(sq,NORTH_WEST) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,NORTH_WEST);
+  }
+  if( Engine::check_direction(sq,SOUTH_EAST) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,SOUTH_EAST);
+  }
+  if( Engine::check_direction(sq,SOUTH_WEST) ) {
+    Engine::propagate_compass_on_position(pos, pattern,sq,SOUTH_WEST);
+  }
   
   return pattern;
 }
 
-Bitboard Engine::generate_pawn_move_pattern_bitboard( enum Square sq ) {
+Bitboard Engine::pseudo_legal_pawn_move_bitboard( const Position& pos,  enum Square sq ) {
   //TODO
   // NOTE: Do not include moving to the 'promotion' rank nor
   // does this include en passant. these moves are covered by
@@ -340,7 +192,7 @@ Bitboard Engine::generate_pawn_move_pattern_bitboard( enum Square sq ) {
   Bitboard sq_bb = SQUARE_TO_BB(sq);
   Bitboard opponent_p = opponent_pieces();
   Bitboard engine_p   = engine_pieces();
-  if( this->pos->side_to_move == white_p ) { // White pieces
+  if( Engine::engine_color() == white_p ) { // White pieces
 
     // Move
     bool blocking_1 = ((opponent_p & engine_p) & SQUARE_TO_BB(sq+NORTH)) > 0;
@@ -384,6 +236,20 @@ Bitboard Engine::generate_pawn_move_pattern_bitboard( enum Square sq ) {
   return pattern;
 }
 
+Square Engine::single_pop_bitboard_to_square( Bitboard one_pop_bb ) {
+  if(one_pop_bb == 0) return NO_SQUARE;
+  enum Square sq = a1;
+  while( one_pop_bb & RANK_1_BB == 0 ) {
+    sq+=NORTH;
+    one_pop_bb << 8;
+  }
+  while(one_pop_bb & FILE_A_BB == 0 ) {
+    sq+=EAST;
+    one_pop_bb << 1;
+  }
+  return sq;
+}
+
 std::vector<Square> Engine::bitboard_to_squares(Bitboard bb) {
   std::vector<Square> selected;
   for( int i = 0; i < NO_SQUARE; i += EAST) {
@@ -395,22 +261,22 @@ std::vector<Square> Engine::bitboard_to_squares(Bitboard bb) {
   return selected;
 }
 
-std::vector<Move> Engine::generate_pseudo_legal_special_moves() {
+std::vector<Move> Engine::generate_pseudo_legal_special_moves(const Position& pos) {
   std::vector<Move> special_moves;
 
   // Castling
   if( Engine::engine_color() == white_p ) {
-    if( this->pos->castle(white_short_castle) ) {
+    if( pos.castle(white_short_castle) ) {
       special_moves.push_back(Move(NO_SQUARE,NO_SQUARE,SHORT_CASTLE));
     }
-    if( this->pos->castle(white_long_castle) ) {
+    if( pos.castle(white_long_castle) ) {
       special_moves.push_back(Move(NO_SQUARE,NO_SQUARE,LONG_CASTLE));
     }
   } else {
-    if( this->pos->castle(black_short_castle) ) {
+    if( pos.castle(black_short_castle) ) {
       special_moves.push_back(Move(NO_SQUARE,NO_SQUARE,SHORT_CASTLE));
     }
-    if( this->pos->castle(black_long_castle) ) {
+    if( pos.castle(black_long_castle) ) {
       special_moves.push_back(Move(NO_SQUARE,NO_SQUARE,LONG_CASTLE));
     }
   }
@@ -418,8 +284,8 @@ std::vector<Move> Engine::generate_pseudo_legal_special_moves() {
   // en Passant
   // ASSUMPTION: If the En Passant Target Square is specified in position object,
   //              then we know that the previous move was a double pawn push!!!
-  enum Square ep_target = this->pos->en_passant_target();
-  Bitboard engine_pawns = Engine::engine_pieces() & this->pos->pieces(pawn_t);
+  enum Square ep_target = pos.en_passant_target();
+  Bitboard engine_pawns = Engine::engine_pieces() & pos.pieces(pawn_t);
   if( ep_target != NO_SQUARE ) {
     // Last move was a double push! Check if any of your pawns are attacking that square!
     enum Square ep_attacker_east = NO_SQUARE;
@@ -473,7 +339,7 @@ std::vector<Move> Engine::generate_pseudo_legal_special_moves() {
 
   return special_moves;
 }
-std::vector<Move> Engine::generate_pseudo_legal_moves(enum Piece p, enum Square sq) {
+std::vector<Move> Engine::generate_pseudo_legal_moves(const Position& pos, Piece p, Square sq) {
   /*
     returns vector of pseudo legal moves for the piece at specified square
     at given position pos. 
@@ -483,31 +349,29 @@ std::vector<Move> Engine::generate_pseudo_legal_moves(enum Piece p, enum Square 
   */
   
   Bitboard move_pattern = EMPTY_BB;
-  if( sq == NO_SQUARE ) move_pattern = EMPTY_BB;
   switch(p) {
     case pawn_p:
-      move_pattern = Engine::generate_pawn_move_pattern_bitboard(sq);
+      move_pattern = Engine::pseudo_legal_pawn_move_bitboard(pos,sq);
       break;
     case knight_p:
-      move_pattern = Engine::generate_knight_move_pattern_bitboard(sq);
+      move_pattern = Engine::pseudo_legal_knight_move_bitboard(pos,sq);
       break;
     case bishop_p:
-      move_pattern = Engine::generate_bishop_move_pattern_bitboard(sq);
+      move_pattern = Engine::pseudo_legal_bishop_move_bitboard(pos,sq);
       break;
     case rook_p:
-      move_pattern = Engine::generate_rook_move_pattern_bitboard(sq);
+      move_pattern = Engine::pseudo_legal_rook_move_bitboard(pos,sq);
       break;
     case queen_p:
-      move_pattern = Engine::generate_queen_move_pattern_bitboard(sq);
+      move_pattern = Engine::pseudo_legal_queen_move_bitboard(pos,sq);
       break;
     case king_p:
-      move_pattern = Engine::generate_king_move_pattern_bitboard(sq);
+      move_pattern = Engine::pseudo_legal_king_move_bitboard(pos,sq);
       break;
     default:
       break;
   }
 
-  Piece engine_color = this->pos->side_to_move;
   std::vector<Square> final_squares = Engine::bitboard_to_squares(move_pattern);
   std::vector<Move> pseudo_legal_moves;
   for( int i = 0; i < final_squares.size(); i++) {
@@ -518,12 +382,241 @@ std::vector<Move> Engine::generate_pseudo_legal_moves(enum Piece p, enum Square 
   return pseudo_legal_moves;
 }
 
-bool Engine::legal_move(Move m) {
+bool Engine::apply_move_to_position(Position& pos, const Move& m) {
+  /* Attempts to apply Move <m> to Position <pos>;
+      returns true if successful
+      false otherwise.
+      - DOES NOT CHECK IF THE MOVE IS LEGAL!!!
+  */
+
+  enum Square init_sq = m.initial_square();
+  enum Square final_sq = m.final_square();
+  bool isPawnMove = false;
   
+  switch( m.flag() ){
+
+    case NO_FLAG:
+      /* not promotion, castle, nor en passant */
+      enum Piece tau = pos.piece_at_square(init_sq);
+      if( tau == none_p ) return false;
+      else if( tau == pawn_p ) { // Check if move enables en_passant!
+        isPawnMove = true;
+        enum Compass pawn_move_direction= (Engine::engine_color(pos) == white_p ) ? (NORTH):(SOUTH);
+        bool double_push = (final_sq == init_sq + (2*pawn_move_direction));
+        if( double_push ) {
+          bool check_west_square = (SQUARE_TO_BB(final_sq) & FILE_A_BB) == 0;
+          bool check_east_square = (SQUARE_TO_BB(final_sq) & FILE_H_BB) == 0;
+          Bitboard opponent_pawns = Engine::opponent_pieces(pos) & pos.pieces(pawn_p);
+          if( check_west_square ) {
+            if( SQUARE_TO_BB(final_sq + WEST) & opponent_pawns ) {
+              pos.en_passant_target_square = init_sq + pawn_move_direction;
+            }
+          }
+          if( check_east_square ) {
+            if( SQUARE_TO_BB(final_sq + EAST) & opponent_pawns) {
+              pos.en_passant_target_square = init_sq + pawn_move_direction;
+            }
+          }
+        }
+      } else if( tau == king_p ) {
+        // Must revoke castling rights
+        pos.revoke_castle(Engine::engine_color(pos));
+      }
+
+      pos.remove(init_sq);
+      pos.remove(final_sq);
+      pos.set(final_sq,Engine::engine_color(pos));
+      pos.set(final_sq,tau);
+      break;
+    case PROMOTE_KNIGHT:
+      pos.remove(init_sq);
+      pos.set(final_sq,Engine::engine_color(pos));
+      pos.set(final_sq,knight_p);
+      break;
+    case PROMOTE_BISHOP:
+      pos.remove(init_sq);
+      pos.set(final_sq,Engine::engine_color(pos));
+      pos.set(final_sq,bishop_p);
+      break;
+    case PROMOTE_ROOK:
+      pos.remove(init_sq);
+      pos.set(final_sq,Engine::engine_color(pos));
+      pos.set(final_sq,rook_p);
+      break;
+    case PROMOTE_QUEEN:
+      pos.remove(init_sq);
+      pos.set(final_sq,Engine::engine_color(pos));
+      pos.set(final_sq,queen_p);
+      break;
+    case LONG_CASTLE:
+      if( Engine::engine_color(pos) == white_p) {
+        pos.remove(e1); // king initial sq
+        pos.remove(a1); // rook initial sq
+        pos.set(c1,king_p);
+        pos.set(c1,white_p);
+        pos.set(d1,rook_p);
+        pos.set(d1,white_p);
+        // Remove castle rights
+        pos.revoke_castle(white_p);
+      } else {
+        pos.remove(e8); // king initial sq
+        pos.remove(a8); // rook initial sq
+        pos.set(c8,king_p);
+        pos.set(c8,black_p);
+        pos.set(d8,rook_p);
+        pos.set(d8,black_p);
+        pos.revoke_castle(black_p);
+      }
+      break;
+    case SHORT_CASTLE:
+      if( Engine::engine_color(pos) == white_p ) {
+        pos.remove(e1);
+        pos.remove(h1);
+        pos.set(g1,king_p);
+        pos.set(g1,white_p);
+        pos.set(e1,rook_p);
+        pos.set(e1,white_p);
+        pos.revoke_castle(white_p);
+      } else {
+        pos.remove(e8);
+        pos.remove(h8);
+        pos.set(g8,king_p);
+        pos.set(g8,white_p);
+        pos.set(e8,rook_p);
+        pos.set(e8,white_p);
+        pos.revoke_castle(black_p);
+      }
+      break;
+    case EN_PASSANT:
+      isPawnMove = true
+      enum Compass enemy_pawn_move_direction = (Engine::engine_color(pos) == white_p ) ? SOUTH:NORTH;
+      pos.remove(init_sq); // remove our pawn
+      pos.remove(final_sq + enemy_pawn_move_direction); // remove opponent pawn
+      pos.set(final_sq,Engine::engine_color(pos));
+      pos.set(final_sq,pawn_p);
+      break;
+    default:
+      return false;
+  }
+
+  // Swap side to move!
+  pos.side_to_move = (pos.side_to_move == white_p) ? black_p : white_p;
+  pos.full_move_counter++;
+
+  bool isCapture = (SQUARE_TO_BB(final_sq) & Engine::opponent_pieces(pos)) > 0;
+  if( isCapture || isPawnMove ) {
+    pos.half_move_clock = 0;
+  } else {
+    pos.half_move_clock++;
+  }
+
+  return true;
+}
+
+bool Engine::legal_move(const Position& pos, const Move& m) {
+  // Only need to check if after the move happens, we're not in check!
+  Position* duplicate = Position::copy(pos);
+  if( !Engine::apply_move_to_position(*copy, m) ) {
+    free(duplicate);
+    return false;
+  }
+
+  Bitboard engine_king = duplicate->pieces(Engine::engine_color(pos)) & duplicate->pieces(king_p);
+  Square engine_king_square = Engine::single_pop_bitboard_to_square(engine_king);
+
+  Bitboard diagonal_attackers = duplicate->pieces(Engine::opponent_color(pos))
+                                & duplicate->pieces(queen_p)
+                                & duplicate->pieces(king_p) 
+                                & duplicate->pieces(bishop_p);
+  Bitboard king_diagonals = engine_king;
+  if( Engine::check_direction(engine_king_square, NORTH_EAST)) {
+    Engine::propagate_compass_on_position(*duplicate,king_diagonals,engine_king_square,NORTH_EAST);
+  }
+  if( Engine::check_direction(engine_king_square, NORTH_WEST)) {
+    Engine::propagate_compass_on_position(*duplicate,king_diagonals,engine_king_square,NORTH_WEST);
+  }
+  if( Engine::check_direction(engine_king_square, SOUTH_EAST)) {
+    Engine::propagate_compass_on_position(*duplicate,king_diagonals,engine_king_square,SOUTH_EAST);
+  }
+  if( Engine::check_direction(engine_king_square, SOUTH_WEST)) {
+    Engine::propagate_compass_on_position(*duplicate,king_diagonals,engine_king_square,SOUTH_WEST);
+  }
+  if( king_diagonals & diagonal_attackers ) return false;
+
+  Bitboard flat_attackers = duplicate->pieces(Engine::opponent_color(pos)) 
+                            & duplicate->pieces(rook_p)
+                            & duplicate->pieces(king_p)
+                            & duplicate->pieces(queen_p);
+  Bitboard king_flats = engine_king;
+  if( Engine::check_direction(engine_king_square,NORTH)) {
+    Engine::propagate_compass_on_position(*duplicate,king_flats,engine_king_square,NORTH);
+  }
+
+  if( Engine::check_direction(engine_king_square,EAST)) {
+    Engine::propagate_compass_on_position(*duplicate,king_flats,engine_king_square,EAST);
+  }
+  if( Engine::check_direction(engine_king_square,WEST)) {
+    Engine::propagate_compass_on_position(*duplicate,king_flats,engine_king_square,WEST);
+  }
+  if( Engine::check_direction(engine_king_square,SOUTH)) {
+    Engine::propagate_compass_on_position(*duplicate,king_flats,engine_king_square,SOUTH);
+  }
+  if( king_flats & flat_attackers ) return false;
+
+  //TODO Check for knight attackers
+  //TODO Check for pawn attackers
+
+
+
+  free(duplicate);
   return false;
 }
 
-std::vector<Move> Engine::generate_legal_moves( const Position& pos ) {
+bool Engine::check_direction( Square sq, Compass dir ) {
+  /* Returns true if a piece may move one step in the direction <dir>
+      without hitting an edge */
+  if( sq == NO_SQUARE ) return false;
+  Bitboard sq_bb = SQUARE_TO_BB(sq);
+  switch(dir) {
+    case NORTH:
+      return (sq_bb & NORTH_BB > 0);
+    case EAST:
+      return (sq_bb & EAST_BB > 0);
+    case WEST:
+      return (sq_bb & WEST_BB > 0);
+    case SOUTH:
+      return (sq_bb & SOUTH_BB > 0);
+    case NORTH_EAST:
+      return (sq_bb & NORTH_EAST_BB > 0);
+    case NORTH_WEST:
+      return (sq_bb & NORTH_WEST_BB > 0);
+    case SOUTH_EAST:
+      return (sq_bb & SOUTH_EAST_BB > 0);
+    case SOUTH_WEST:
+      return (sq_bb & SOUTH_WEST_BB > 0);
+    case NORTH_NORTH_EAST:
+      return (sq_bb & NORTH_NORTH_EAST_BB > 0);
+    case NORTH_NORTH_WEST:
+      return (sq_bb & NORTH_NORTH_WEST_BB > 0);
+    case NORTH_EAST_EAST:
+      return (sq_bb & NORTH_EAST_EAST_BB > 0);
+    case SOUTH_EAST_EAST:
+      return (sq_bb & SOUTH_EAST_EAST > 0);
+    case SOUTH_SOUTH_EAST:
+      return (sq_bb & SOUTH_SOUTH_EAST > 0);
+    case SOUTH_SOUTH_WEST:
+      return (sq_bb & SOUTH_SOUTH_WEST > 0);
+    case SOUTH_WEST_WEST:
+      return (sq_bb & SOUTH_WEST_WEST > 0);
+    case NORTH_WEST_WEST:
+      return (sq_bb & NORTH_WEST_WEST > 0);
+    default:
+      return false; // Error!?
+  }
+  return false;
+}
+
+std::vector<Move> Engine::generate_legal_moves(const Position& pos) {
   //TODO
   return NULL;
 }
