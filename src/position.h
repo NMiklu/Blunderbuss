@@ -15,35 +15,19 @@ struct Position {
     static Position* copy(const Position& pos);
 
     Bitboard pieces(Piece x) const;
-
-    Bitboard white_pieces() const;
-    Bitboard white_pawns() const;
-    Bitboard white_rooks() const;
-    Bitboard white_knights() const;
-    Bitboard white_bishops() const;
-    Bitboard white_queens() const;
-    Bitboard white_king() const;
-
-    Bitboard black_pieces() const;
-    Bitboard black_pawns() const;
-    Bitboard black_rooks() const;
-    Bitboard black_knights() const;
-    Bitboard black_bishops() const;
-    Bitboard black_queens() const;
-    Bitboard black_king() const;
+    Square en_passant_target() const;
+    Piece piece_at_square( Square sq );
 
     void pretty(std::ostream& os) const;
     void set( Square sq, Piece piece_p );
     void remove(Square sq);
+    void clear();
     bool castle(uint8_t bits);
     bool revoke_castle(Piece color);
     bool halfmove();
     bool fullmove();
     bool fen(std::string fen_string);
-    void clear();
     bool check_rep() const;
-    Square en_passant_target() const;
-    Piece piece_at_square( Square sq );
 
 
     //TODO Piece/Square cache

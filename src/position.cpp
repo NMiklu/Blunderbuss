@@ -15,50 +15,6 @@ Bitboard Position::pieces( Piece x ) const {
   return pieceBB[x];
 }
 
-Bitboard Position::black_pieces() const {
-  return pieceBB[black_p];
-}
-Bitboard Position::black_pawns() const {
-  return (pieceBB[black_p] & pieceBB[pawn_p]);
-}
-Bitboard Position::black_rooks() const {
-  return (pieceBB[black_p] & pieceBB[rook_p]);
-}
-Bitboard Position::black_knights() const {
-  return (pieceBB[black_p] & pieceBB[knight_p]);
-}
-Bitboard Position::black_bishops() const {
-  return (pieceBB[black_p] & pieceBB[bishop_p]);
-}
-Bitboard Position::black_queens() const {
-  return (pieceBB[black_p] & pieceBB[queen_p]);
-}
-Bitboard Position::black_king() const {
-  return (pieceBB[black_p] & pieceBB[king_p]);
-}
-
-Bitboard Position::white_pieces() const {
-  return pieceBB[white_p];
-}
-Bitboard Position::white_pawns() const {
-  return (pieceBB[white_p] & pieceBB[pawn_p]);
-}
-Bitboard Position::white_rooks() const {
-  return (pieceBB[white_p] & pieceBB[rook_p]);
-}
-Bitboard Position::white_knights() const {
-  return (pieceBB[white_p] & pieceBB[knight_p]);
-}
-Bitboard Position::white_bishops() const {
-  return (pieceBB[white_p] & pieceBB[bishop_p]);
-}
-Bitboard Position::white_queens() const {
-  return (pieceBB[white_p] & pieceBB[queen_p]);
-}
-Bitboard Position::white_king() const {
-  return (pieceBB[white_p] & pieceBB[king_p]);
-}
-
 void Position::pretty( std::ostream& os ) const {
   /*
     Outputs ASCII chess board to ostream <os>
