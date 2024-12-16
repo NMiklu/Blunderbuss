@@ -78,9 +78,9 @@ void Position::set( Square sq, Piece piece_p ) {
   Bitboard squareBB = SQUARE_TO_BB(sq);
   this->pieceBB[piece_p] |= squareBB;
 }
-void Engine::remove(Square sq) {
+void Position::remove(Square sq) {
   /* clears Square <sq> from any pieces*/
-  Bitboard tau = (~SQUARE_TO_BB(sq))
+  Bitboard tau = (~SQUARE_TO_BB(sq));
   for( int i = 0; i < 8; i++ ) {
     this->pieceBB[i] &= tau;
   }
@@ -90,7 +90,7 @@ bool Position::castle(uint8_t bits) {
       in the castle data.
       false otherwise 
       bits are best specified by CastleMask enum -> refer to representation.h*/
-  return this->castle_ability & bits == bits;
+  return (this->castle_ability & bits) == bits;
 }
 bool Position::revoke_castle(Piece color) {
   /* Revokes the castle rights in 'this' position of the side
@@ -352,7 +352,7 @@ bool Position::check_rep() const {
   return true;
 }
 
-Sqaure Position::en_passant_target() const {
+Square Position::en_passant_target() const {
   return this->en_passant_target_square;
 }
 
@@ -366,7 +366,7 @@ Piece Position::piece_at_square( Square sq ) {
 }
 
 Position* Position::copy(const Position& pos) {
-  Position* copy_ = new Position::Position();
+  Position* copy_ = new Position();
   for( unsigned short i = 0; i < 8; i++ ) {
     copy_->pieceBB[i] = pos.pieceBB[i];
   }
