@@ -87,62 +87,81 @@ enum Compass : int {
   NORTH_WEST_WEST  = NORTH_WEST + WEST
 };
 
-enum Piece {
-  white_p,
-  black_p,
-  pawn_p,
-  knight_p,
-  bishop_p,
-  rook_p,
-  queen_p,
-  king_p,
-  none_p
+enum PieceType : uint8_t {
+  PAWN=0,
+  KNIGHT=1,
+  BISHOP=2,
+  ROOK=3,
+  QUEEN=4,
+  KING=5,
+  PIECE_TYPE_BOUND=6,
+  NO_TYPE=7,
 };
 
-enum CastleMask : uint8_t {
-  white_short_castle  = 0b1000,
-  white_long_castle   = 0b0100,
-  black_short_castle  = 0b0010,
-  black_long_castle   = 0b0001
+enum Color : uint8_t {
+  WHITE=0,
+  BLACK=1,
+  COLOR_BOUND=2,
+  NO_COLOR=3
+};
+
+enum Piece : uint8_t {
+  W_PAWN = 0, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
+  B_PAWN = 6, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING,
+  PIECE_BOUND = 12,
+  NO_PIECE = 13
+}
+
+enum CastleRight : uint8_t {
+  WHITE_SHORT_CASTLE  = 0b1000,
+  WHITE_LONG_CASTLE   = 0b0100,
+  BLACK_SHORT_CASTLE  = 0b0010,
+  BLACK_LONG_CASTLE   = 0b0001
 };
 
 struct Move {
+  /*
+    _data = 0000 000000 000000
+            XXXX YYYYYY ZZZZZZ
+            X -> Flags ( Castle, En Passant, Promotion )
+              0000 -> NO FLAG
+              1000 -> en passant
+              0100 -> castle
+              1100 -> Promote to knight
+              1101 -> Promote to bishop
+              1110 -> Promote to rook
+              1111 -> Promote to queen
+            Y -> Initial Square
+            Z -> Final Square
+  */
   typedef enum {
-    INITIAL_SQUARE = 0xFC00,
-    FINAL_SQUARE   = 0x03F0,
-    SPECIAL_FLAG   = 0x000F // Promote, Castle, En Passant
-  }MoveMask;
-  typedef enum {
-    /*
-      NO FLAG      = 0000 0000
-      Flag on      = 0000 1000
-      Promo knight = 0000 1001
-      Promo bishop = 0000 1010
-      promo rook   = 0000 1011
-      promo queen  = 0000 1100
-      long castle  = 0000 1101
-      short castle = 0000 1110
-      en_passant   = 0000 1111
-    */
-    NO_FLAG        = 0x00,
-    PROMOTE_KNIGHT = 0b00001001,
-    PROMOTE_BISHOP = 0b00001010,
-    PROMOTE_ROOK   = 0b00001011,
-    PROMOTE_QUEEN  = 0b00001100,
-    LONG_CASTLE    = 0b00001101,
-    SHORT_CASTLE   = 0b00001110,
-    EN_PASSANT     = 0b00001111
+    NO_FLAG         = 0x0000,
+    CASTLE          = 0x4000,
+    EN_PASSANT      = 0x8000,
+    PROMOTE_KNIGHT  = 0x9000,
+    PROMOTE_BISHOP  = 0xA000,
+    PROMOTE_ROOK    = 0xB000,
+    PROMOTE_QUEEN   = 0xC000
   }MoveFlag;
 
-  Move(enum Square init, enum Square final, MoveFlag flag);
   Move()  = default;
+  constexpr Move(uint16_t data) : _data(data) {}
+  constexpr Move(Square initial, Square final) : _data( (initial << 6) + final ) {}
+  constexpr Move(Square initial, Square final, MoveFlag flag ) :
+    : _data( flag + ((initial << 6) + final ) ) {}
   ~Move() = default;
 
-  enum Square inital_square();
-  enum Square final_square();
-  MoveFlag flag();
+  constexpr Square inital_square() const {
+    return Square((_data >> 6) & 0b111111);
+  }
+  constexpr Square final_square() const {
+    return Square(_data & 0b111111);
+  }
+  constexpr MoveFlag flag() const {
+    return MoveFlag(_data & 0xF000);
+  }
 
-  uint16_t     _move_data;
+  uint16_t     _data;
 };
 
 
