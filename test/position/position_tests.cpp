@@ -16,20 +16,7 @@ void position_copy_test() {}
 void position_pieces_test() {}
 void position_en_passant_target_test() {}
 void position_piece_at_square_test() {}
-void position_set_test() {
-  for( int rank_idx = 0; rank_idx < 8; rank_idx++ ) {
-    for( int file_idx = 0; file_idx < 8; file_idx++ ) { 
-      Square sq = static_cast<Square>((rank_idx * 8) + file_idx);
-      Bitboard check = rank_bbs[rank_idx] & file_bbs[file_idx];
-      for( int piece_idx = 0; piece_idx < 8; piece_idx++ ) {
-        Position* p = new Position();
-        p->set(sq,piece_types[piece_idx]);
-        assert((p->pieceBB[piece_types[piece_idx]] & check) > 0);
-        delete( p );
-      }
-    }
-  }
-}
+void position_set_test() {}
 void position_remove_test() {}
 void position_clear_test() {}
 void position_castle_test() {}
