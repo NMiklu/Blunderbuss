@@ -30,12 +30,12 @@ Bitboard Position::pieces( Piece x ) const {
   PieceType t = Position::type(x);
   Color     c = Position::color(x);
   assert(t != NO_TYPE);
-  return colorBB[c] & pieceBB[t];
+  return colorBB[c] & pieceTypeBB[t];
 }
 
 Bitboard Position::pieces(PieceType x) const {
   assert(x != NO_TYPE);
-  return pieceBB[t];
+  return pieceTypeBB[x];
 }
 
 Bitboard Position::pieces(Color x) const {
@@ -63,22 +63,22 @@ void Position::pretty( std::ostream& os ) const {
       color_char = (Position::color(piece_on_sq) == WHITE) ? 'W':'B';
       switch(Position::type(piece_on_sq)) {
         case PAWN:
-          piece_char = 'p'
+          piece_char = 'p';
           break;
         case KNIGHT:
-          piece_char = 'n'
+          piece_char = 'n';
           break;
         case BISHOP:
-          piece_char = 'b'
+          piece_char = 'b';
           break;
         case ROOK:
-          piece_char = 'r'
+          piece_char = 'r';
           break;
         case QUEEN:
-          piece_char = 'q'
+          piece_char = 'q';
           break;
         case KING:
-          piece_char = 'k'
+          piece_char = 'k';
           break;
         default:
           // ERROR?
@@ -87,6 +87,9 @@ void Position::pretty( std::ostream& os ) const {
           break;
       }
     }
+    board[i][0] = color_char;
+    board[i][1] = piece_char;
+    board[i][2] = '\0';
   }
 
   os << "   A  B  C  D  E  F  G  H  " << std::endl;
@@ -141,13 +144,13 @@ void Position::add_castle_right(CastleRight right) {
   */
   this->castleRightMask |= right;
 }
-void Position::has_castle_right( CastleRight right ) {
+bool Position::has_castle_right( CastleRight right ) {
   /*
     Returns true if castle right specified by <right>
     is true in 'this' position.
     false otherwise
   */
-  return (this->castleRightMask & right);
+  return ((this->castleRightMask & right) != 0);
 }
 void Position::revoke_castle_right(CastleRight right) {
   /* Revokes the castle rights in 'this' position
@@ -164,13 +167,13 @@ void Position::inc_fullmove() {
   // Increments fullmove clock
   this->full_move_clock+=1;
 }
-uint8_t halfmove() const {
+uint8_t Position::halfmove() const {
   /* returns the value of the halfmove clock*/
-  return this->half_move_clock;
+  return (this->half_move_clock);
 }
-uint8_t fullmove() const {
+uint16_t Position::fullmove() const {
   /* returns the value of the fullmove clock*/
-  return this->full_move_clock;
+  return (this->full_move_clock);
 }
 
 
@@ -231,7 +234,7 @@ void Position::reset() {
     this->pieceTypeBB[i] = 0ULL;
   }
   for( int i = 0; i < 64; i++ ) {
-    this->pieceBySquare = NO_PIECE;
+    this->pieceBySquare[i] = NO_PIECE;
   }
   this->en_passant_target_square = NO_SQUARE;
   this->side_to_move = WHITE;
@@ -259,7 +262,7 @@ bool Position::_VALID_REP() const {
 
   for( int i = 0; i < PIECE_TYPE_BOUND; i++ ) {
     for( int j = i+1; j < PIECE_TYPE_BOUND; j++ ) {
-      if((pieceBB[i] & pieceBB[j]) != 0)
+      if((pieceTypeBB[i] & pieceTypeBB[j]) != 0)
         // Multiple piece types on a single square
         return false;
     }
@@ -270,13 +273,13 @@ bool Position::_VALID_REP() const {
     if( this->pieceBySquare[i] == PIECE_BOUND ) return false;
   }
 
-  if( this->castle_ability >= 0b1111 ) // Should never be greater than the mask (4 bits)
+  if( this->castleRightMask >= 0b1111 ) // Should never be greater than the mask (4 bits)
     // Invalid castle value
     return false;
   if( this->half_move_clock > Position::MAX_HALF_MOVE )
     //Impossible half_move_clock
     return false;
-  if( this->full_move_counter == 0 )
+  if( this->full_move_clock == 0 )
     // Invalid move clock
     return false;
   int sv = static_cast<int>(this->en_passant_target_square);

@@ -7,7 +7,8 @@ const Bitboard rank_bbs[8] = {RANK_1_BB, RANK_2_BB, RANK_3_BB, RANK_4_BB,
                               RANK_5_BB, RANK_6_BB, RANK_7_BB, RANK_8_BB};
 const Bitboard file_bbs[8] = {FILE_A_BB, FILE_B_BB, FILE_C_BB, FILE_D_BB,
                               FILE_E_BB, FILE_F_BB, FILE_G_BB, FILE_H_BB};
-const Piece piece_types[8] = {white_p, black_p, pawn_p, rook_p, queen_p, king_p};
+const PieceType piece_types[6] = {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING};
+const Color     piece_colors[2] = {WHITE, BLACK};
 
 
 

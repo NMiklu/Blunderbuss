@@ -27,7 +27,7 @@ class Position {
     bool put( Square sq, Piece p ); 
     void remove(Square sq); 
     void add_castle_right(CastleRight right);
-    void has_castle_right(CastleRight right);
+    bool has_castle_right(CastleRight right);
     void revoke_castle_right(CastleRight right);
     void inc_halfmove(); 
     void inc_fullmove(); 
