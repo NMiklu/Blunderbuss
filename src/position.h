@@ -48,7 +48,10 @@ class Position {
     uint8_t           half_move_clock = 0;
     uint16_t          full_move_clock = 1; 
 
-  friend class PositionTests;
+  #ifdef UNIT_TEST
+    friend class PositionTests;
+  #endif
 };
+
 
 #endif
