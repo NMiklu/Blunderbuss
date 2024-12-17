@@ -12,13 +12,14 @@
 
 PieceType Position::type( Piece p ) {
   if( p == PIECE_BOUND || p == NO_PIECE ) return NO_TYPE;
-  int tau = static_cast<int>(p) - 6; // Remove color
+  int tau = static_cast<int>(p); 
+  tau %= 6; // Remove color
   return static_cast<PieceType>(tau);
 }
 
 Color Position::color( Piece p ) {
   if( p == PIECE_BOUND || p == NO_PIECE ) return NO_COLOR;
-  return (static_cast<int>(p) % 5) ? BLACK:WHITE;
+  return (static_cast<int>(p) >= 6) ? BLACK:WHITE;
 }
 
 
@@ -29,7 +30,7 @@ Bitboard Position::pieces( Piece x ) const {
    */
   PieceType t = Position::type(x);
   Color     c = Position::color(x);
-  assert(t != NO_TYPE);
+  if( t == NO_TYPE || c == NO_COLOR ) return EMPTY_BB;
   return colorBB[c] & pieceTypeBB[t];
 }
 

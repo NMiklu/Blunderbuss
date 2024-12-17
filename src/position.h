@@ -47,6 +47,8 @@ class Position {
     uint8_t           castleRightMask = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE );
     uint8_t           half_move_clock = 0;
     uint16_t          full_move_clock = 1; 
+
+  friend class PositionTests;
 };
 
 #endif
