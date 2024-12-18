@@ -7,10 +7,12 @@
 
 class Position {
   public:
-    Position()  = default;
+    Position();
     ~Position() = default;
 
     static const uint8_t MAX_HALF_MOVE = 50;
+    static const uint8_t SQUARE_LIMIT = 64;
+
     static Position* copy(const Position& pos); 
     static Color color(Piece p);    
     static PieceType type(Piece p);
@@ -41,14 +43,14 @@ class Position {
 
     Bitboard          colorBB[COLOR_BOUND] = {0ULL};
     Bitboard          pieceTypeBB[PIECE_TYPE_BOUND] = {0ULL};
-    Piece             pieceBySquare[64] = {NO_PIECE};
+    Piece             pieceBySquare[SQUARE_LIMIT];
     Square            en_passant_target_square = NO_SQUARE;
     Color             side_to_move = WHITE;
     uint8_t           castleRightMask = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE );
     uint8_t           half_move_clock = 0;
-    uint16_t          full_move_clock = 1; 
+    uint16_t          full_move_clock = 0; 
 
-  #ifdef UNIT_TEST
+  #ifdef POSITION_TEST
     friend class PositionTests;
   #endif
 };

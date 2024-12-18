@@ -36,18 +36,18 @@ constexpr Bitboard NORTH_BB      = ~(RANK_8_BB);
 constexpr Bitboard EAST_BB       = ~(FILE_H_BB);
 constexpr Bitboard WEST_BB       = ~(FILE_A_BB);
 constexpr Bitboard SOUTH_BB      = ~(RANK_1_BB);
-constexpr Bitboard NORTH_EAST_BB = ~(RANK_8_BB & FILE_H_BB);
-constexpr Bitboard NORTH_WEST_BB = ~(RANK_8_BB & FILE_A_BB);
-constexpr Bitboard SOUTH_EAST_BB = ~(RANK_1_BB & FILE_H_BB);
-constexpr Bitboard SOUTH_WEST_BB = ~(RANK_1_BB & FILE_A_BB);
-constexpr Bitboard NORTH_NORTH_EAST_BB = ~(RANK_8_BB & RANK_7_BB & FILE_H_BB);
-constexpr Bitboard NORTH_NORTH_WEST_BB = ~(RANK_8_BB & RANK_7_BB & FILE_A_BB);
-constexpr Bitboard NORTH_EAST_EAST_BB = ~(RANK_8_BB & FILE_G_BB & FILE_H_BB);
-constexpr Bitboard SOUTH_EAST_EAST_BB = ~(RANK_1_BB & FILE_G_BB & FILE_H_BB);
-constexpr Bitboard SOUTH_SOUTH_EAST_BB = ~(RANK_1_BB & RANK_2_BB & FILE_H_BB);
-constexpr Bitboard SOUTH_SOUTH_WEST_BB = ~(RANK_1_BB & RANK_2_BB & FILE_A_BB);
-constexpr Bitboard SOUTH_WEST_WEST_BB = ~(RANK_1_BB & FILE_A_BB & FILE_B_BB);
-constexpr Bitboard NORTH_WEST_WEST_BB = ~(RANK_8_BB & FILE_A_BB & FILE_B_BB);
+constexpr Bitboard NORTH_EAST_BB = ~(RANK_8_BB | FILE_H_BB);
+constexpr Bitboard NORTH_WEST_BB = ~(RANK_8_BB | FILE_A_BB);
+constexpr Bitboard SOUTH_EAST_BB = ~(RANK_1_BB | FILE_H_BB);
+constexpr Bitboard SOUTH_WEST_BB = ~(RANK_1_BB | FILE_A_BB);
+constexpr Bitboard NORTH_NORTH_EAST_BB = ~(RANK_8_BB | RANK_7_BB | FILE_H_BB);
+constexpr Bitboard NORTH_NORTH_WEST_BB = ~(RANK_8_BB | RANK_7_BB | FILE_A_BB);
+constexpr Bitboard NORTH_EAST_EAST_BB  = ~(RANK_8_BB | FILE_G_BB | FILE_H_BB);
+constexpr Bitboard SOUTH_EAST_EAST_BB  = ~(RANK_1_BB | FILE_G_BB | FILE_H_BB);
+constexpr Bitboard SOUTH_SOUTH_EAST_BB = ~(RANK_1_BB | RANK_2_BB | FILE_H_BB);
+constexpr Bitboard SOUTH_SOUTH_WEST_BB = ~(RANK_1_BB | RANK_2_BB | FILE_A_BB);
+constexpr Bitboard SOUTH_WEST_WEST_BB  = ~(RANK_1_BB | FILE_A_BB | FILE_B_BB);
+constexpr Bitboard NORTH_WEST_WEST_BB  = ~(RANK_8_BB | FILE_A_BB | FILE_B_BB);
 
 
 

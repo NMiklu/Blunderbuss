@@ -4,11 +4,12 @@
 #include <string>
 #include <sstream>
 #include <cmath>
-#include <cassert>
-
-#include <iostream> //DEBUG REMOVE LATER
+#include <cstring> //memset
 
 
+Position::Position() {
+  memset(this->pieceBySquare,NO_PIECE,Position::SQUARE_LIMIT);
+}
 
 PieceType Position::type( Piece p ) {
   if( p == PIECE_BOUND || p == NO_PIECE ) return NO_TYPE;
@@ -35,17 +36,17 @@ Bitboard Position::pieces( Piece x ) const {
 }
 
 Bitboard Position::pieces(PieceType x) const {
-  assert(x != NO_TYPE);
+  if( x == PIECE_TYPE_BOUND || x == NO_TYPE) return EMPTY_BB;
   return pieceTypeBB[x];
 }
 
 Bitboard Position::pieces(Color x) const {
-  assert( x != NO_COLOR );
+  if( x == COLOR_BOUND || x == NO_COLOR) return EMPTY_BB;
   return colorBB[x];
 }
 
 Piece Position::piece_on(Square sq) const {
-  assert(sq != NO_SQUARE);
+  if( sq == NO_SQUARE ) return NO_PIECE;
   return pieceBySquare[static_cast<int>(sq)];
 }
 
@@ -118,9 +119,9 @@ bool Position::put( Square sq, Piece p ) {
   if( t == NO_TYPE || sq == NO_SQUARE ) return false;
 
   Bitboard sq_bb = SQUARE_TO_BB(sq);
-  this->pieceTypeBB[t] &= sq_bb;
-  this->colorBB[c] &= sq_bb;
-  this->pieceBySquare[static_cast<int>(sq)] = p;
+  this->pieceTypeBB[t] |= sq_bb;
+  this->colorBB[c] |= sq_bb;
+  this->pieceBySquare[sq] = p;
   
   return true;
 }
@@ -228,20 +229,44 @@ void Position::reset() {
     returns 'this' position back to
     the default chess starting position
   */
-  for( int i = 0; i < static_cast<int>(COLOR_BOUND); i++) {
-    this->colorBB[i] = 0ULL;
-  }
-  for( int i = 0; i < static_cast<int>(PIECE_TYPE_BOUND); i++) {
-    this->pieceTypeBB[i] = 0ULL;
-  }
-  for( int i = 0; i < 64; i++ ) {
-    this->pieceBySquare[i] = NO_PIECE;
-  }
+
+  memset(this->pieceBySquare,NO_PIECE,Position::SQUARE_LIMIT);
+  this->colorBB[WHITE] = RANK_1_BB | RANK_2_BB;
+  this->colorBB[BLACK] = RANK_7_BB | RANK_8_BB;
+  this->pieceTypeBB[ROOK] = CORNER_BB;
+  this->pieceTypeBB[PAWN] = RANK_2_BB | RANK_7_BB;
+  this->pieceTypeBB[BISHOP] = (RANK_8_BB|RANK_1_BB) & (FILE_C_BB | FILE_F_BB);
+  this->pieceTypeBB[KNIGHT] = (RANK_8_BB|RANK_1_BB) & (FILE_B_BB | FILE_G_BB);
+  this->pieceTypeBB[QUEEN] = (RANK_8_BB|RANK_1_BB) & (FILE_D_BB);
+  this->pieceTypeBB[KING] = (RANK_8_BB|RANK_1_BB) & (FILE_E_BB);
+  for( int i = a2; i <= h2; i+=EAST) this->pieceBySquare[i] = W_PAWN;
+  for( int i = a7; i <= h7; i+=EAST) this->pieceBySquare[i] = B_PAWN;
+  this->pieceBySquare[a1] = W_ROOK;
+  this->pieceBySquare[h1] = W_ROOK;
+  this->pieceBySquare[a8] = B_ROOK;
+  this->pieceBySquare[h8] = B_ROOK;
+
+  this->pieceBySquare[c1] = W_BISHOP;
+  this->pieceBySquare[f1] = W_BISHOP;
+  this->pieceBySquare[c8] = B_BISHOP;
+  this->pieceBySquare[f8] = B_BISHOP;
+
+  this->pieceBySquare[b1] = W_KNIGHT;
+  this->pieceBySquare[g1] = W_KNIGHT;
+  this->pieceBySquare[b8] = B_KNIGHT;
+  this->pieceBySquare[g8] = B_KNIGHT;
+
+  this->pieceBySquare[e1] = W_KING;
+  this->pieceBySquare[e8] = B_KING;
+
+  this->pieceBySquare[d1] = W_QUEEN;
+  this->pieceBySquare[d8] = B_QUEEN;
+
   this->en_passant_target_square = NO_SQUARE;
   this->side_to_move = WHITE;
   this->castleRightMask = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
   this->half_move_clock = 0;
-  this->full_move_clock = 1;
+  this->full_move_clock = 0;
 }
 bool Position::_VALID_REP() const {
   /*
