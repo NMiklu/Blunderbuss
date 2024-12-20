@@ -183,6 +183,12 @@ public:
     Bitboard king_bb  = (RANK_1_BB | RANK_8_BB) & (FILE_E_BB);
     Bitboard queen_bb = (RANK_1_BB | RANK_8_BB) & (FILE_D_BB);
     Position* p = new Position();
+
+    // Put a random piece on the board somewhere lol
+    p->colorBB[WHITE] |= SQUARE_TO_BB(e1);
+    p->pieceTypeBB[KING] |= SQUARE_TO_BB(e1);
+    p->pieceBySquare[e1] = W_KING;
+
     p->reset();
     assert(p->colorBB[WHITE] == white_bb);
     assert(p->colorBB[BLACK] == black_bb);

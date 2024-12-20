@@ -8,7 +8,7 @@
 
 
 Position::Position() {
-  memset(this->pieceBySquare,NO_PIECE,Position::SQUARE_LIMIT);
+  memset(this->pieceBySquare,NO_PIECE,Position::SQUARE_LIMIT*sizeof(Piece));
 }
 
 PieceType Position::type( Piece p ) {
@@ -43,6 +43,15 @@ Bitboard Position::pieces(PieceType x) const {
 Bitboard Position::pieces(Color x) const {
   if( x == COLOR_BOUND || x == NO_COLOR) return EMPTY_BB;
   return colorBB[x];
+}
+
+Color Position::to_attack() const {
+  /* Returns the side to move in 'this' position */
+  return this->side_to_move;
+}
+Color Position::to_defend() const {
+  /* Returns the opposite side of the current side to move */
+  return (this->side_to_move == WHITE) ? BLACK:WHITE;
 }
 
 Piece Position::piece_on(Square sq) const {
@@ -188,15 +197,15 @@ bool Position::fen(std::string fen_string ) {
     https://www.chessprogramming.org/Forsyth-Edwards_Notation
     Returns true if representation is updated.
     False if the fen is invalid.
-    WARNING -> does NOT revert changes to 'this' that were 
-                manipulated before failure.
+
     <FEN> ::= <Piece Placement>
           ' ' <Side to move>
           ' ' <Castling ability>
           ' ' <En passant target square>
           ' ' <Halfmove clock>
           ' ' <Fullmove counter>
-
+  */
+  /*
     <Piece Placement> ::=
         <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'
         <rank4>'/'<rank3>'/'<rank2>'/'<rank1>
@@ -205,19 +214,24 @@ bool Position::fen(std::string fen_string ) {
     <digit17>     ::= '1' | '2' | '3' | '4' | '5' | '6' | '7'
     <white piece> ::= 'P' | 'N' | 'B' | 'R' | 'Q' | 'K' 
     <black piece> ::= 'p' | 'n' | 'b' | 'r' | 'q' | 'k' 
-
+  */
+  /*
     <Side to move> ::= {'w' | 'b'}
-
+  */
+  /*
     <Castling ability> ::= '-' | ['K'] | ['Q'] | ['k'] | ['q'] (1..4)
-
+  */
+  /*
     <En passant target square> ::= '-' | <epsquare>
     <epsquare>   ::= <fileLetter><eprank>
     <fileLetter> ::= 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'
     <eprank>     ::= '3' | '6'
-
+  */
+  /*
     <Halfmove Clock> ::= <digit> {<digit>}
     <digit> ::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-
+  */
+  /*
     <Fullmove counter> ::= <digit19> {<digit>}
     <digit19>          ::= '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
     <digit>            ::= '0' | <digit19>
@@ -230,37 +244,42 @@ void Position::reset() {
     the default chess starting position
   */
 
-  memset(this->pieceBySquare,NO_PIECE,Position::SQUARE_LIMIT);
-  this->colorBB[WHITE] = RANK_1_BB | RANK_2_BB;
-  this->colorBB[BLACK] = RANK_7_BB | RANK_8_BB;
-  this->pieceTypeBB[ROOK] = CORNER_BB;
-  this->pieceTypeBB[PAWN] = RANK_2_BB | RANK_7_BB;
-  this->pieceTypeBB[BISHOP] = (RANK_8_BB|RANK_1_BB) & (FILE_C_BB | FILE_F_BB);
-  this->pieceTypeBB[KNIGHT] = (RANK_8_BB|RANK_1_BB) & (FILE_B_BB | FILE_G_BB);
-  this->pieceTypeBB[QUEEN] = (RANK_8_BB|RANK_1_BB) & (FILE_D_BB);
-  this->pieceTypeBB[KING] = (RANK_8_BB|RANK_1_BB) & (FILE_E_BB);
-  for( int i = a2; i <= h2; i+=EAST) this->pieceBySquare[i] = W_PAWN;
-  for( int i = a7; i <= h7; i+=EAST) this->pieceBySquare[i] = B_PAWN;
-  this->pieceBySquare[a1] = W_ROOK;
-  this->pieceBySquare[h1] = W_ROOK;
-  this->pieceBySquare[a8] = B_ROOK;
-  this->pieceBySquare[h8] = B_ROOK;
+  memset(this->pieceBySquare,NO_PIECE,Position::SQUARE_LIMIT*sizeof(Piece));
+  memset(this->pieceTypeBB,0ULL,PIECE_TYPE_BOUND*sizeof(Bitboard));
+  memset(this->colorBB,0ULL,COLOR_BOUND*sizeof(Bitboard));
+  this->put(a2,W_PAWN);
+  this->put(b2,W_PAWN);
+  this->put(c2,W_PAWN);
+  this->put(d2,W_PAWN);
+  this->put(e2,W_PAWN);
+  this->put(f2,W_PAWN);
+  this->put(g2,W_PAWN);
+  this->put(h2,W_PAWN);
+  this->put(a1,W_ROOK);
+  this->put(h1,W_ROOK);
+  this->put(b1,W_KNIGHT);
+  this->put(g1,W_KNIGHT);
+  this->put(c1,W_BISHOP);
+  this->put(f1,W_BISHOP);
+  this->put(e1,W_KING);
+  this->put(d1,W_QUEEN);
 
-  this->pieceBySquare[c1] = W_BISHOP;
-  this->pieceBySquare[f1] = W_BISHOP;
-  this->pieceBySquare[c8] = B_BISHOP;
-  this->pieceBySquare[f8] = B_BISHOP;
-
-  this->pieceBySquare[b1] = W_KNIGHT;
-  this->pieceBySquare[g1] = W_KNIGHT;
-  this->pieceBySquare[b8] = B_KNIGHT;
-  this->pieceBySquare[g8] = B_KNIGHT;
-
-  this->pieceBySquare[e1] = W_KING;
-  this->pieceBySquare[e8] = B_KING;
-
-  this->pieceBySquare[d1] = W_QUEEN;
-  this->pieceBySquare[d8] = B_QUEEN;
+  this->put(a7,B_PAWN);
+  this->put(b7,B_PAWN);
+  this->put(c7,B_PAWN);
+  this->put(d7,B_PAWN);
+  this->put(e7,B_PAWN);
+  this->put(f7,B_PAWN);
+  this->put(g7,B_PAWN);
+  this->put(h7,B_PAWN);
+  this->put(a8,B_ROOK);
+  this->put(h8,B_ROOK);
+  this->put(b8,B_KNIGHT);
+  this->put(g8,B_KNIGHT);
+  this->put(c8,B_BISHOP);
+  this->put(f8,B_BISHOP);
+  this->put(e8,B_KING);
+  this->put(d8,B_QUEEN);
 
   this->en_passant_target_square = NO_SQUARE;
   this->side_to_move = WHITE;
@@ -334,4 +353,208 @@ Position* Position::copy(const Position& pos) {
   copy_->half_move_clock = pos.half_move_clock;
   copy_->full_move_clock = pos.full_move_clock;
   return copy_;
+}
+
+
+
+bool Position::move_direction_before_edge(Square sq, Compass dir) {
+  /* Returns true if the move direction specified by <dir> 
+      does not reach past the edge of the board from 
+      the square specified by <sq>.
+      false otherwise.
+  */
+  if( sq == NO_SQUARE ) return false;
+  return Position::move_direction_before_edge(SQUARE_TO_BB(sq),dir);
+};
+
+bool Position::move_direction_before_edge(Bitboard sq_bb, Compass dir) {
+  /* Returns true if the move direction specified by <dir> 
+      does not reach past the edge of the board from 
+      the square specified by <sq_bb>.
+      false otherwise.
+  */
+  if( sq_bb == EMPTY_BB ) return false;
+  switch(dir) {
+    case NORTH:
+      return ((sq_bb & NORTH_BB) != 0);
+    case SOUTH:
+      return ((sq_bb & SOUTH_BB) != 0);
+    case EAST:
+      return ((sq_bb & EAST_BB) != 0);
+    case WEST:
+      return ((sq_bb & WEST_BB) != 0);
+    case NORTH_WEST:
+      return ((sq_bb & NORTH_WEST_BB) != 0);
+    case NORTH_EAST:
+      return ((sq_bb & NORTH_EAST_BB) != 0);
+    case SOUTH_WEST:
+      return ((sq_bb & SOUTH_WEST_BB) != 0);
+    case SOUTH_EAST:
+      return ((sq_bb & SOUTH_EAST_BB) != 0);
+    case NORTH_NORTH_EAST:
+      return ((sq_bb & NORTH_NORTH_EAST_BB) != 0);
+    case NORTH_NORTH_WEST:
+      return ((sq_bb & NORTH_NORTH_WEST_BB) != 0);
+    case NORTH_EAST_EAST:
+      return ((sq_bb & NORTH_EAST_EAST_BB) != 0);
+    case SOUTH_EAST_EAST:
+      return ((sq_bb & SOUTH_EAST_EAST_BB) != 0);
+    case SOUTH_SOUTH_EAST:
+      return ((sq_bb & SOUTH_SOUTH_EAST_BB) != 0);
+    case SOUTH_SOUTH_WEST:
+      return ((sq_bb & SOUTH_SOUTH_WEST_BB) != 0);
+    case SOUTH_WEST_WEST:
+      return ((sq_bb & SOUTH_WEST_WEST_BB) != 0);
+    case NORTH_WEST_WEST:
+      return ((sq_bb & NORTH_WEST_WEST_BB) != 0);
+    default:
+      return false;
+  }
+  return false;
+};
+
+
+Bitboard Position::pseudo_legal_normal_move_bb(Square sq) const {
+  /*
+    Creates a bitboard of pseudo legal squares
+    that the piece on the square could move to.
+     -> Does not check if move puts own king in check
+     -> Only accounts for simple moves, i.e.
+          NOT Promotion, Castling, En Passant...
+     -> Assumes that the piece on the square <sq> is 
+         the current side to move i.e. <this->to_attack()>
+  */
+  Piece pieceAtSq = this->piece_on(sq);
+  Bitboard move_pattern = EMPTY_BB;
+  Compass dirs[16] = {NORTH,EAST,SOUTH,WEST,NORTH_EAST,NORTH_WEST,SOUTH_EAST,SOUTH_WEST,
+                      NORTH_NORTH_EAST, NORTH_NORTH_WEST,
+                      NORTH_EAST_EAST, SOUTH_EAST_EAST,
+                      SOUTH_SOUTH_EAST, SOUTH_SOUTH_WEST,
+                      SOUTH_WEST_WEST, NORTH_WEST_WEST};
+  switch(Position::type(pieceAtSq)) {
+    case PAWN:
+      move_pattern |= Position::pseudo_legal_pawn_move_bb(sq);
+      break;
+    case KNIGHT:
+      for( int i = 8; i < 16; i++ )
+        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],false);
+      break;
+    case BISHOP:
+      for( int i = 4; i < 8; i++ )
+        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],true);
+      break;
+    case ROOK:
+      for( int i = 0; i < 4; i++ )
+        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],true);
+      break;
+    case QUEEN:
+      for( int i = 0; i < 8; i++ )
+        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],true);
+      break;
+    case KING:
+      for( int i = 0; i < 8; i++ )
+        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],false);
+      break;
+    default:
+      // pieceAtSq == NO_PIECE
+      break;
+  }
+  return move_pattern;
+}
+
+Bitboard Position::pseudo_legal_pawn_move_bb( Square sq ) const {
+  /*
+    Generates bitboard of 'normal' moves for a pawn on square <sq>
+    such that the pawn is on the side of <this->to_attack()> i.e. the side
+    to move.
+  */
+
+  Bitboard move_pattern = EMPTY_BB;
+  Bitboard sq_bb = SQUARE_TO_BB(sq);
+  Bitboard to_promote_check = (this->to_attack() == WHITE ) ? RANK_7_BB:RANK_2_BB;
+  Compass pawn_move_dir = (this->to_attack() == WHITE ) ? NORTH:SOUTH;
+  Compass pawn_attack_east = static_cast<Compass>(pawn_move_dir + EAST);
+  Compass pawn_attack_west = static_cast<Compass>(pawn_move_dir + WEST);
+
+  // Move forward
+  if( (sq_bb & to_promote_check) == 0 ) {
+    // Not a promotion, therefore still counts as a 'normal' move
+    move_pattern |= (SQUARE_TO_BB(static_cast<Square>(sq+pawn_move_dir)));
+  }
+
+  if( Position::move_direction_before_edge(sq, pawn_attack_east)) {
+    Bitboard attack_east_bb = SQUARE_TO_BB(static_cast<Square>(sq+pawn_attack_east));
+    Bitboard opponent_pieces = this->pieces(this->to_defend());
+    if( opponent_pieces & attack_east_bb ) {
+      // Pawn is attacking enemy piece!
+      move_pattern |= attack_east_bb;
+    }
+  }
+
+  if( Position::move_direction_before_edge(sq, pawn_attack_west)) {
+    Bitboard attack_west_bb = SQUARE_TO_BB(static_cast<Square>(sq+pawn_attack_west));
+    Bitboard opponent_pieces = this->pieces(this->to_defend());
+    if( opponent_pieces & attack_west_bb ) {
+      // Pawn is attacking enemy piece!
+      move_pattern |= attack_west_bb;
+    }
+  }
+
+  return move_pattern;
+}
+
+Bitboard Position::pseudo_legal_direction_move_bb(Square sq, Compass dir, bool propagate) const {
+  /*
+    Creates a bitboard of pseudo legal move squares given the direction
+    from the square specified by <sq> where the direction is propagated
+    until a edge is hit. 
+    (only propogates the direction if <propagate> is true
+     else it'll only move in that direction once)
+    -> Does not check if move will put own king in check.
+    -> Does not include moves that capture or move over
+        <side_to_move> pieces
+    -> INCLUDES the 'first' capture on a given direction...
+    NOTE: Does not include the square <sq> in the op:
+    +---+---+---+---+---+    +---+---+---+---+---+
+    | p |   |   |   |   |    | * |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   |   |   |   |    |   | * |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   | B |   |   | -> |   |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   |   |   |   |    |   |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   |   |   |   |    |   |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    where: B = White Bishop
+           p = Black pawn
+
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   |   |   |   |    |   |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   |   |   |   |    |   |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   | B |   |   | -> |   |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    |   |   |   |   |   |    |   | * |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    | K |   |   |   |   |    |   |   |   |   |   |
+    +---+---+---+---+---+    +---+---+---+---+---+
+    where: B = White Bishop
+           K = White Knight 
+  */
+  Bitboard move_pattern = EMPTY_BB;
+  Bitboard self_pieces = this->pieces(this->to_attack());
+  Bitboard opponent_pieces = this->pieces(this->to_defend());
+  if( Position::move_direction_before_edge(sq, dir)) {
+    Square next_square = static_cast<Square>(sq+dir);
+    do {
+      Bitboard next_square_bb = SQUARE_TO_BB(next_square);
+      if( next_square_bb & self_pieces ) return move_pattern;
+      move_pattern |= next_square_bb;
+      if( next_square_bb & opponent_pieces ) return move_pattern;
+      next_square = static_cast<Square>(next_square + dir);
+    } while(Position::move_direction_before_edge(next_square,dir) && propagate);
+  }
+  return move_pattern;
 }

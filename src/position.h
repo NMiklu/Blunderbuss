@@ -20,6 +20,8 @@ class Position {
     Bitboard pieces(Piece x) const;
     Bitboard pieces(PieceType x) const;
     Bitboard pieces(Color x) const; 
+    Color to_attack() const;
+    Color to_defend() const;
     Square en_passant_target() const; 
     Piece piece_on( Square sq ) const;
     void pretty(std::ostream& os) const; 
@@ -35,6 +37,12 @@ class Position {
     void inc_fullmove(); 
     uint8_t halfmove() const;
     uint16_t fullmove() const;
+
+    static bool move_direction_before_edge(Square sq, Compass dir);
+    static bool move_direction_before_edge(Bitboard sq, Compass dir);
+    Bitboard pseudo_legal_normal_move_bb(Square sq) const;
+    Bitboard pseudo_legal_pawn_move_bb(Square sq) const;
+    Bitboard pseudo_legal_direction_move_bb(Square sq, Compass dir, bool propagate) const;
     
 
 
