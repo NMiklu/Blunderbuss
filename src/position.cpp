@@ -546,13 +546,13 @@ Bitboard Position::pseudo_legal_direction_move_bb(Square sq, Compass dir, bool p
   Bitboard self_pieces = this->pieces(this->to_attack());
   Bitboard opponent_pieces = this->pieces(this->to_defend());
   if( Position::move_direction_before_edge(sq, dir)) {
-    Square next_square = static_cast<Square>(sq+dir);
+    Square next_square = sq;
     do {
+      next_square = static_cast<Square>(next_square+dir);
       Bitboard next_square_bb = SQUARE_TO_BB(next_square);
       if( next_square_bb & self_pieces ) return move_pattern;
       move_pattern |= next_square_bb;
       if( next_square_bb & opponent_pieces ) return move_pattern;
-      next_square = static_cast<Square>(next_square + dir);
     } while(Position::move_direction_before_edge(next_square,dir) && propagate);
   }
   return move_pattern;
