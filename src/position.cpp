@@ -274,10 +274,9 @@ bool Position::_VALID_REP() const {
     false otherwise.
 
     rep invariant:
-  pieceBB[white_p] & pieceBB[black_p] == 0
-  && forall (i,j):[pawn_p,...,king_p] (where i != j): pieceBB[i] & pieceBB[j] == 0
-  && forall i:[pawn_p,...,king_p] (!(pieceBB[i] & pieceBB[white_p] == 0 && pieceBB[i] & pieceBB[black_p] == 0))
-  && castle_ability < 16 && half_move_clock <= 50 && full_move_clock > 0
+  (colorBB[WHITE] & colorBB[BLACK]) == 0
+  && forall i,j:[PAWN,ROOK,BISHOP,KNIGHT,KING,QUEEN] where i!=j (pieceTypeBB[i] & pieceTypeBB[j] == 0)
+  && castle_ability < 16 
   && en_passant_target_square: ([16,23] || [40,47] || 64)
   && (side_to_move == black_p || side_to_move == white_p)
   && forall i:[0,...,63] (inclusive) within pieceBySquare[i] != PIECE_BOUND
@@ -302,12 +301,7 @@ bool Position::_VALID_REP() const {
   if( this->castleRightMask >= 0b1111 ) // Should never be greater than the mask (4 bits)
     // Invalid castle value
     return false;
-  if( this->half_move_clock > Position::MAX_HALF_MOVE )
-    //Impossible half_move_clock
-    return false;
-  if( this->full_move_clock == 0 )
-    // Invalid move clock
-    return false;
+
   int sv = static_cast<int>(this->en_passant_target_square);
   if( !((sv >= 16 && sv <= 23) || (sv >= 40 || sv <= 47) || (sv == 64)) )
     // Invalid en passant square

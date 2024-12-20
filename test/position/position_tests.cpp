@@ -16,19 +16,28 @@ class PositionTests {
 public:
 
   static void unit_tests() {
-    PositionTests::position_color_test();
-    PositionTests::position_type_test();
-    PositionTests::position_pieces_Piece_test();
-    PositionTests::position_pieces_PieceType_test();
-    PositionTests::position_pieces_Color_test();
-    PositionTests::position_en_passant_target_test();
-    PositionTests::position_piece_on_test();
-    PositionTests::position_reset_test();
-    PositionTests::position_put_test();
+    PositionTests::color_test();
+    PositionTests::type_test();
+    PositionTests::pieces_Piece_test();
+    PositionTests::pieces_PieceType_test();
+    PositionTests::pieces_Color_test();
+    PositionTests::en_passant_target_test();
+    PositionTests::piece_on_test();
+    PositionTests::reset_test();
+    PositionTests::put_test();
+    PositionTests::remove_test();
+    PositionTests::add_castle_right_test();
+    PositionTests::has_castle_right_test();
+    PositionTests::revoke_castle_right_test();
+    PositionTests::inc_halfmove_test();
+    PositionTests::inc_fullmove_test();
+    PositionTests::halfmove_test();
+    PositionTests::fullmove_test();
+    PositionTests::fen_test(); // TODO
   }
   /* UNIT TESTS */
-  static void position_copy_test() {}
-  static void position_color_test() {
+  static void copy_test() {}
+  static void color_test() {
     Piece w_ps[6] = {W_PAWN,W_KNIGHT,W_BISHOP,W_ROOK,W_QUEEN,W_KING};
     Piece b_ps[6] = {B_PAWN,B_KNIGHT,B_BISHOP,B_ROOK,B_QUEEN,B_KING};
     for( int i = 0; i < 6; i++ ) {
@@ -38,7 +47,7 @@ public:
     assert(Position::color(PIECE_BOUND) == NO_COLOR);
     assert(Position::color(NO_PIECE) == NO_COLOR);
   }
-  static void position_type_test() {
+  static void type_test() {
     assert(Position::type(W_PAWN) == PAWN);
     assert(Position::type(B_PAWN) == PAWN);
     assert(Position::type(W_KNIGHT) == KNIGHT);
@@ -54,7 +63,7 @@ public:
     assert(Position::type(PIECE_BOUND) == NO_TYPE);
     assert(Position::type(NO_PIECE) == NO_TYPE);
   }
-  static void position_pieces_Piece_test() {
+  static void pieces_Piece_test() {
     for( int t = 0; t < PIECE_BOUND; t++) {
       Piece phi = static_cast<Piece>(t);
       Color c = (t<6) ? WHITE:BLACK;
@@ -79,7 +88,7 @@ public:
     assert(p->pieces(NO_PIECE) == EMPTY_BB);
     delete p;
   }
-  static void position_pieces_PieceType_test() {
+  static void pieces_PieceType_test() {
     for( int pie = 0; pie < PIECE_BOUND; pie++) {
       Piece piece_ = static_cast<Piece>(pie);
       PieceType t = static_cast<PieceType>(pie%6);
@@ -108,7 +117,7 @@ public:
     assert(p->pieces(NO_PIECE) == EMPTY_BB);
     delete p;
   }
-  static void position_pieces_Color_test(){
+  static void pieces_Color_test(){
     for( int tau = 0; tau < PIECE_BOUND; tau++ ) {
       Piece pie = static_cast<Piece>(tau);
       PieceType ty = static_cast<PieceType>(tau%6);
@@ -134,7 +143,7 @@ public:
     delete p;
   }
 
-  static void position_en_passant_target_test() {
+  static void en_passant_target_test() {
     Position* p = new Position();
     for( int i = 0; i < 64; i++ ) {
       Square sq = static_cast<Square>(i);
@@ -143,9 +152,10 @@ public:
     }
     p->en_passant_target_square = NO_SQUARE;
     assert(p->en_passant_target() == NO_SQUARE);
+    delete p;
   }
 
-  static void position_piece_on_test() {
+  static void piece_on_test() {
     for( int pie = 0; pie < PIECE_BOUND; pie++ ) {
       Position* p = new Position();
       Piece piece_ = static_cast<Piece>(pie);
@@ -163,8 +173,7 @@ public:
     }
     delete p;
   }
-  static void position_fen_test() {} // TODO
-  static void position_reset_test() {
+  static void reset_test() {
     Bitboard white_bb = RANK_1_BB | RANK_2_BB;
     Bitboard black_bb = RANK_7_BB | RANK_8_BB;
     Bitboard pawn_bb  = RANK_2_BB | RANK_7_BB;
@@ -219,7 +228,7 @@ public:
     delete p;
   }
 
-  static void position_put_test() {
+  static void put_test() {
     for( int i = 0; i < PIECE_BOUND; i++ ) {
       Piece tau = static_cast<Piece>(i);
       PieceType pt = static_cast<PieceType>(i%6);
@@ -241,14 +250,128 @@ public:
     assert(!p->put(a1,PIECE_BOUND));
     delete p;
   }
-  static void position_remove_test() {}
-  static void position_add_castle_right_test() {}
-  static void position_has_castle_right_test() {}
-  static void position_revoke_castle_right_test() {}
-  static void position_inc_havemove_test() {}
-  static void position_inc_fullmove_test() {}
-  static void position_halfmove_test() {}
-  static void position_fullmove_test() {}
+  static void remove_test() {
+    Position* p = new Position();
+    Piece pie = W_KING;
+    Color c = WHITE;
+    PieceType pt = KING;
+    Square sq = e4;
+    Bitboard sq_bb = SQUARE_TO_BB(sq);
+    p->colorBB[c] |= sq_bb;
+    p->pieceTypeBB[pt] |= sq_bb;
+    p->pieceBySquare[sq] = pie;
+    p->remove(sq);
+
+    assert((p->colorBB[c] & sq_bb) == 0);
+    assert((p->pieceTypeBB[pt] & sq_bb) == 0);
+    assert(p->pieceBySquare[sq] == NO_PIECE);
+    delete p;
+  }
+  static void add_castle_right_test() {
+    Position* p = new Position();
+    p->castleRightMask = 0;
+    assert((p->castleRightMask & (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE)) == 0);
+
+    p->add_castle_right(WHITE_SHORT_CASTLE);
+    assert((p->castleRightMask & WHITE_SHORT_CASTLE) != 0);
+    p->add_castle_right(WHITE_LONG_CASTLE);
+    assert((p->castleRightMask & WHITE_SHORT_CASTLE) != 0);
+
+    p->add_castle_right(BLACK_SHORT_CASTLE);
+    assert((p->castleRightMask & BLACK_SHORT_CASTLE) != 0);
+    p->add_castle_right(BLACK_LONG_CASTLE);
+    assert((p->castleRightMask & BLACK_SHORT_CASTLE) != 0);
+    delete p;
+  }
+  static void has_castle_right_test() {
+    Position* p = new Position();
+    uint8_t all_rights = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
+    uint8_t white_castle = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE);
+    uint8_t black_castle = (BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
+    uint8_t long_castle = (WHITE_LONG_CASTLE | BLACK_LONG_CASTLE);
+    uint8_t short_castle = (WHITE_SHORT_CASTLE | BLACK_SHORT_CASTLE);
+
+    p->castleRightMask = all_rights;
+    assert(p->has_castle_right(WHITE_SHORT_CASTLE));
+    assert(p->has_castle_right(WHITE_LONG_CASTLE));
+    assert(p->has_castle_right(BLACK_SHORT_CASTLE));
+    assert(p->has_castle_right(BLACK_LONG_CASTLE));
+    p->castleRightMask = white_castle;
+    assert(p->has_castle_right(WHITE_SHORT_CASTLE));
+    assert(p->has_castle_right(WHITE_LONG_CASTLE));
+    assert(!p->has_castle_right(BLACK_SHORT_CASTLE));
+    assert(!p->has_castle_right(BLACK_LONG_CASTLE));
+    p->castleRightMask = black_castle;
+    assert(!p->has_castle_right(WHITE_SHORT_CASTLE));
+    assert(!p->has_castle_right(WHITE_LONG_CASTLE));
+    assert(p->has_castle_right(BLACK_SHORT_CASTLE));
+    assert(p->has_castle_right(BLACK_LONG_CASTLE));
+    p->castleRightMask = long_castle;
+    assert(!p->has_castle_right(WHITE_SHORT_CASTLE));
+    assert(p->has_castle_right(WHITE_LONG_CASTLE));
+    assert(!p->has_castle_right(BLACK_SHORT_CASTLE));
+    assert(p->has_castle_right(BLACK_LONG_CASTLE));
+    p->castleRightMask = short_castle;
+    assert(p->has_castle_right(WHITE_SHORT_CASTLE));
+    assert(!p->has_castle_right(WHITE_LONG_CASTLE));
+    assert(p->has_castle_right(BLACK_SHORT_CASTLE));
+    assert(!p->has_castle_right(BLACK_LONG_CASTLE));
+    delete p;
+  }
+  static void revoke_castle_right_test() {
+    Position* p = new Position();
+    uint8_t all_rights = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
+    uint8_t w_short_check = (~WHITE_SHORT_CASTLE) & 0x0F; // Have to dodge compiler :P
+    uint8_t w_long_check = (~WHITE_LONG_CASTLE) & 0x0F; 
+    uint8_t b_short_check = (~BLACK_SHORT_CASTLE) & 0x0F; 
+    uint8_t b_long_check = (~BLACK_LONG_CASTLE) & 0x0F; 
+
+    p->castleRightMask = all_rights;
+    p->revoke_castle_right(WHITE_SHORT_CASTLE);
+    assert(p->castleRightMask == w_short_check);
+
+    p->castleRightMask = all_rights;
+    p->revoke_castle_right(WHITE_LONG_CASTLE);
+    assert(p->castleRightMask == w_long_check);
+
+    p->castleRightMask = all_rights;
+    p->revoke_castle_right(BLACK_SHORT_CASTLE);
+    assert(p->castleRightMask == b_short_check);
+
+    p->castleRightMask = all_rights;
+    p->revoke_castle_right(BLACK_LONG_CASTLE);
+    assert(p->castleRightMask == b_long_check);
+
+    delete p;
+  }
+  static void inc_halfmove_test() {
+    Position* p = new Position();
+    p->half_move_clock = 20;
+    p->inc_halfmove();
+    assert(p->half_move_clock == 21);
+    delete p;
+  }
+  static void inc_fullmove_test() {
+    Position* p = new Position();
+    p->full_move_clock = 70;
+    p->inc_fullmove();
+    assert(p->full_move_clock == 71);
+    delete p;
+  }
+  static void halfmove_test() {
+    Position* p = new Position();
+    p->half_move_clock = 15;
+    assert(p->halfmove() == 15);
+    delete p;
+  }
+  static void fullmove_test() {
+    Position* p = new Position();
+    p->full_move_clock = 95;
+    assert(p->fullmove() == 95);
+    delete p;
+  }
+
+  static void fen_test() {} // TODO
 };
 
 
