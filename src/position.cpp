@@ -55,7 +55,7 @@ Color Position::to_defend() const {
 
 Piece Position::piece_on(Square sq) const {
   if( sq == NO_SQUARE ) return NO_PIECE;
-  return pieceBySquare[static_cast<int>(sq)];
+  return this->pieceBySquare[sq];
 }
 
 
@@ -294,10 +294,12 @@ bool Position::_VALID_REP() const {
     rep invariant:
   (colorBB[WHITE] & colorBB[BLACK]) == 0
   && forall i,j:[PAWN,ROOK,BISHOP,KNIGHT,KING,QUEEN] where i!=j (pieceTypeBB[i] & pieceTypeBB[j] == 0)
-  && castle_ability < 16 
+  && castleRightMask < 16 
   && en_passant_target_square: ([16,23] || [40,47] || 64)
   && (side_to_move == black_p || side_to_move == white_p)
   && forall i:[0,...,63] (inclusive) within pieceBySquare[i] != PIECE_BOUND
+  && ((pieceTypeBB[PAWN] & colorBB[WHITE]) & RANK_8_BB) == 0
+  && ((pieceTypeBB[PAWN] & colorBB[BLACK]) & RANK_1_BB) == 0
   */
 
   // There are white and black pieces on top of each other!
@@ -326,6 +328,14 @@ bool Position::_VALID_REP() const {
     return false;
   if( !((this->side_to_move == WHITE)||(this->side_to_move == BLACK)))
     // Invalid piece-type designated side to move
+    return false;
+
+  if(((pieceTypeBB[PAWN] & colorBB[WHITE]) & RANK_8_BB) != 0 )
+    // White pawn on the 8th rank
+    return false;
+
+  if(((pieceTypeBB[PAWN] & colorBB[BLACK]) & RANK_1_BB) != 0 )
+    // Black pawn on the 1st rank
     return false;
 
   return true;
@@ -472,31 +482,32 @@ Bitboard Position::pseudo_legal_pawn_move_bb( Square sq ) const {
   Bitboard sq_bb = SQUARE_TO_BB(sq);
   Bitboard to_promote_check = (this->to_attack() == WHITE ) ? RANK_7_BB:RANK_2_BB;
   Compass pawn_move_dir = (this->to_attack() == WHITE ) ? NORTH:SOUTH;
-  Compass pawn_attack_east = static_cast<Compass>(pawn_move_dir + EAST);
-  Compass pawn_attack_west = static_cast<Compass>(pawn_move_dir + WEST);
+  Compass pawn_attack_east = Compass(pawn_move_dir + EAST);
+  Compass pawn_attack_west = Compass(pawn_move_dir + WEST);
 
   // Move forward
   if( (sq_bb & to_promote_check) == 0 ) {
     // Not a promotion, therefore still counts as a 'normal' move
-    move_pattern |= (SQUARE_TO_BB(static_cast<Square>(sq+pawn_move_dir)));
-  }
-
-  if( Position::move_direction_before_edge(sq, pawn_attack_east)) {
-    Bitboard attack_east_bb = SQUARE_TO_BB(static_cast<Square>(sq+pawn_attack_east));
-    Bitboard opponent_pieces = this->pieces(this->to_defend());
-    if( opponent_pieces & attack_east_bb ) {
-      // Pawn is attacking enemy piece!
-      move_pattern |= attack_east_bb;
+    Square move_fwd_sq = Square(sq + pawn_move_dir);
+    if( this->piece_on(move_fwd_sq) == NO_PIECE ) {
+      // Only move forward if there is nothing in the way!!!
+      move_pattern |= SQUARE_TO_BB(move_fwd_sq);
     }
-  }
 
-  if( Position::move_direction_before_edge(sq, pawn_attack_west)) {
-    Bitboard attack_west_bb = SQUARE_TO_BB(static_cast<Square>(sq+pawn_attack_west));
-    Bitboard opponent_pieces = this->pieces(this->to_defend());
-    if( opponent_pieces & attack_west_bb ) {
-      // Pawn is attacking enemy piece!
-      move_pattern |= attack_west_bb;
+    if( Position::move_direction_before_edge(sq, pawn_attack_east)) {
+      Square attack_east_sq = Square(sq+pawn_attack_east);
+      if(Position::color(this->piece_on(attack_east_sq)) == this->to_defend()) {
+        move_pattern |= SQUARE_TO_BB(attack_east_sq);
+      }
     }
+
+    if( Position::move_direction_before_edge(sq, pawn_attack_west)) {
+      Square attack_west_sq = Square(sq+pawn_attack_west);
+      if(Position::color(this->piece_on(attack_west_sq)) == this->to_defend()) {
+        move_pattern |= SQUARE_TO_BB(attack_west_sq);
+      }
+    }
+
   }
 
   return move_pattern;

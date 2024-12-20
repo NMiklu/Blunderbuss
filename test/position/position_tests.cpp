@@ -34,6 +34,10 @@ public:
     PositionTests::halfmove_test();
     PositionTests::fullmove_test();
     PositionTests::fen_test(); // TODO
+    PositionTests::to_attack_test();
+    PositionTests::to_defend_test();
+
+    PositionTests::pseudo_legal_pawn_move_bb_test();
   }
   /* UNIT TESTS */
   static void copy_test() {}
@@ -378,6 +382,79 @@ public:
   }
 
   static void fen_test() {} // TODO
+
+  static void to_attack_test() {
+    Position* p = new Position();
+    p->side_to_move = WHITE;
+    assert(p->to_attack() == WHITE);
+    p->side_to_move = BLACK;
+    assert(p->to_attack() == BLACK);
+    delete p;
+  }
+
+  static void to_defend_test() {
+    Position* p = new Position();
+    p->side_to_move = WHITE;
+    assert(p->to_defend() == BLACK);
+    p->side_to_move = BLACK;
+    assert(p->to_defend() == WHITE);
+    delete p;
+  }
+
+  static void move_direction_before_edge_sq_test() {} //TODO
+  static void move_direction_before_edge_bb_test() {} //DOOT
+  static void pseudo_legal_normal_move_bb_test() {} //TODO
+  static void pseudo_legal_pawn_move_bb_test() {
+    Bitboard e4_bb = SQUARE_TO_BB(e4);
+    Bitboard e5_bb = SQUARE_TO_BB(e5);
+    Bitboard f5_bb = SQUARE_TO_BB(f5);
+    Bitboard d5_bb = SQUARE_TO_BB(d5);
+    Position* p = new Position();
+    p->side_to_move = WHITE;
+
+    p->colorBB[WHITE] |= e4_bb;
+    p->pieceTypeBB[PAWN] |= e4_bb;
+    p->pieceBySquare[e4] = W_PAWN;
+    Bitboard move_check = SQUARE_TO_BB(e5);
+    assert(p->pseudo_legal_pawn_move_bb(e4) == move_check);
+    
+    p->colorBB[BLACK] |= f5_bb;
+    p->pieceTypeBB[PAWN] |= f5_bb;
+    p->pieceBySquare[f5] = B_PAWN;
+    p->colorBB[BLACK] |= d5_bb;
+    p->pieceTypeBB[PAWN] |= d5_bb;
+    p->pieceBySquare[d5] = B_PAWN;
+    move_check |= SQUARE_TO_BB(f5);
+    move_check |= SQUARE_TO_BB(d5);
+    assert(p->pseudo_legal_pawn_move_bb(e4) == move_check);
+
+    p->colorBB[BLACK] |= e5_bb;
+    p->pieceTypeBB[PAWN] |= e5_bb;
+    p->pieceBySquare[e5] = B_PAWN;
+    move_check &= ~(SQUARE_TO_BB(e5));
+    assert((p->pseudo_legal_pawn_move_bb(e4) == move_check));
+
+    p->side_to_move = BLACK;
+    p->colorBB[BLACK] |= SQUARE_TO_BB(a2);
+    p->pieceTypeBB[PAWN] |= SQUARE_TO_BB(a2);
+    p->pieceBySquare[a2] = B_PAWN;
+    assert(p->pseudo_legal_pawn_move_bb(a2) == EMPTY_BB);
+    delete p;
+
+    Position* p2 = new Position();
+    p2->side_to_move = BLACK;
+    p2->colorBB[BLACK] |= SQUARE_TO_BB(e5);
+    p2->colorBB[WHITE] |= SQUARE_TO_BB(e4);
+    p2->pieceTypeBB[PAWN] |= SQUARE_TO_BB(e4);
+    p2->pieceTypeBB[PAWN] |= SQUARE_TO_BB(e5);
+    p2->pieceBySquare[e4] = W_PAWN;
+    p2->pieceBySquare[e5] = B_PAWN;
+    assert(p->pseudo_legal_pawn_move_bb(e5) == EMPTY_BB);
+
+    delete p2;
+
+  }
+  static void pseudo_legal_direction_move_bb_test() {} // DOOT
 };
 
 
