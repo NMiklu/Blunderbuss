@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 #include "representation.h"
 
 class Position {
@@ -16,6 +17,8 @@ class Position {
     static Position* copy(const Position& pos); 
     static Color color(Piece p);    
     static PieceType type(Piece p);
+    static bool move_direction_before_edge(Square sq, Compass dir);
+    static bool move_direction_before_edge(Bitboard sq, Compass dir);
 
     Bitboard pieces(Piece x) const;
     Bitboard pieces(PieceType x) const;
@@ -24,6 +27,7 @@ class Position {
     Color to_defend() const;
     Square en_passant_target() const; 
     Piece piece_on( Square sq ) const;
+    bool is_attacked(Square sq) const;
     void pretty(std::ostream& os) const; 
 
     bool fen(std::string fen_string); // TODO
@@ -31,22 +35,22 @@ class Position {
     bool put( Square sq, Piece p ); 
     void remove(Square sq); 
     void add_castle_right(CastleRight right);
-    bool has_castle_right(CastleRight right);
+    bool has_castle_right(CastleRight right) const;
     void revoke_castle_right(CastleRight right);
     void inc_halfmove(); 
     void inc_fullmove(); 
     uint8_t halfmove() const;
     uint16_t fullmove() const;
 
-    static bool move_direction_before_edge(Square sq, Compass dir);
-    static bool move_direction_before_edge(Bitboard sq, Compass dir);
-    Bitboard pseudo_legal_normal_move_bb(Square sq) const;
-    Bitboard pseudo_legal_pawn_move_bb(Square sq) const;
-    Bitboard pseudo_legal_direction_move_bb(Square sq, Compass dir, bool propagate) const;
-    
-
-
   private:
+
+
+    Bitboard pseudo_legal_direction_bitboard(Square sq, Compass dir, bool propogate) const;
+    std::vector<Move> pseudo_legal_normal_moves(Square sq) const;
+    std::vector<Move> pseudo_legal_pawn_moves(Square sq) const;
+    std::vector<Move> pseudo_legal_direction_moves(Square sq, Compass dir, bool propagate) const;
+    std::vector<Move> pseudo_legal_special_moves(Square sq) const;
+
     bool _VALID_REP() const; 
 
     Bitboard          colorBB[COLOR_BOUND] = {0ULL};

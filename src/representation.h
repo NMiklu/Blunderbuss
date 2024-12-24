@@ -161,6 +161,10 @@ struct Move {
     return MoveFlag(_data & 0xF000);
   }
 
+  constexpr uint16_t raw() const {
+    return this->_data;
+  }
+
   uint16_t     _data;
 };
 

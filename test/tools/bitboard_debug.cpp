@@ -1,5 +1,6 @@
 #include "../../src/representation.h"
 #include "bitboard_debug.h"
+#include <vector>
 #include <iostream>
 
 
@@ -27,5 +28,15 @@ void Bitboard_Debug::pretty(std::ostream& os, Bitboard bb) {
 bool Bitboard_Debug::square_filled(Bitboard bb, Square sq) {
   if( SQUARE_TO_BB(sq) & bb ) return true;
   return false;
+}
+
+std::vector<Bitboard> Bitboard_Debug::discretize(Bitboard bb) {
+  std::vector<Bitboard> vec;
+  Bitboard tau = 1ULL;
+  for(int i = 0; i < 64; i++) {
+    if( tau & bb ) vec.push_back(tau & bb);
+    tau = tau << 1;
+  }
+  return vec;
 }
 

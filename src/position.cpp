@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cmath>
 #include <cstring> //memset
+#include <vector>
 
 
 Position::Position() {
@@ -154,7 +155,7 @@ void Position::add_castle_right(CastleRight right) {
   */
   this->castleRightMask |= right;
 }
-bool Position::has_castle_right( CastleRight right ) {
+bool Position::has_castle_right( CastleRight right ) const {
   /*
     Returns true if castle right specified by <right>
     is true in 'this' position.
@@ -423,9 +424,9 @@ bool Position::move_direction_before_edge(Bitboard sq_bb, Compass dir) {
 };
 
 
-Bitboard Position::pseudo_legal_normal_move_bb(Square sq) const {
+std::vector<Move> Position::pseudo_legal_normal_moves(Square sq) const {
   /*
-    Creates a bitboard of pseudo legal squares
+    Creates a vector of pseudo legal moves
     that the piece on the square could move to.
      -> Does not check if move puts own king in check
      -> Only accounts for simple moves, i.e.
@@ -433,8 +434,8 @@ Bitboard Position::pseudo_legal_normal_move_bb(Square sq) const {
      -> Assumes that the piece on the square <sq> is 
          the current side to move i.e. <this->to_attack()>
   */
+  std::vector<Move> moves;
   Piece pieceAtSq = this->piece_on(sq);
-  Bitboard move_pattern = EMPTY_BB;
   Compass dirs[16] = {NORTH,EAST,SOUTH,WEST,NORTH_EAST,NORTH_WEST,SOUTH_EAST,SOUTH_WEST,
                       NORTH_NORTH_EAST, NORTH_NORTH_WEST,
                       NORTH_EAST_EAST, SOUTH_EAST_EAST,
@@ -442,43 +443,52 @@ Bitboard Position::pseudo_legal_normal_move_bb(Square sq) const {
                       SOUTH_WEST_WEST, NORTH_WEST_WEST};
   switch(Position::type(pieceAtSq)) {
     case PAWN:
-      move_pattern |= Position::pseudo_legal_pawn_move_bb(sq);
-      break;
+      return Position::pseudo_legal_pawn_moves(sq);
     case KNIGHT:
-      for( int i = 8; i < 16; i++ )
-        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],false);
+      for( int i = 8; i < 16; i++ ) {
+        std::vector<Move> gamma = Position::pseudo_legal_direction_moves(sq,dirs[i],false);
+        moves.insert(moves.end(),gamma.begin(),gamma.end());
+      }
       break;
     case BISHOP:
-      for( int i = 4; i < 8; i++ )
-        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],true);
+      for( int i = 4; i < 8; i++ ) {
+        std::vector<Move> gamma = Position::pseudo_legal_direction_moves(sq,dirs[i],true);
+        moves.insert(moves.end(),gamma.begin(),gamma.end());
+      }
       break;
     case ROOK:
-      for( int i = 0; i < 4; i++ )
-        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],true);
+      for( int i = 0; i < 4; i++ ) {
+        std::vector<Move> gamma = Position::pseudo_legal_direction_moves(sq,dirs[i],true);
+        moves.insert(moves.end(),gamma.begin(),gamma.end());
+      }
       break;
     case QUEEN:
-      for( int i = 0; i < 8; i++ )
-        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],true);
+      for( int i = 0; i < 8; i++ ) {
+        std::vector<Move> gamma = Position::pseudo_legal_direction_moves(sq,dirs[i],true);
+        moves.insert(moves.end(),gamma.begin(),gamma.end());
+      }
       break;
     case KING:
-      for( int i = 0; i < 8; i++ )
-        move_pattern |= Position::pseudo_legal_direction_move_bb(sq,dirs[i],false);
+      for( int i = 0; i < 8; i++ ) {
+        std::vector<Move> gamma = Position::pseudo_legal_direction_moves(sq,dirs[i],false);
+        moves.insert(moves.end(),gamma.begin(),gamma.end());
+      }
       break;
     default:
       // pieceAtSq == NO_PIECE
       break;
   }
-  return move_pattern;
+  return moves;
 }
 
-Bitboard Position::pseudo_legal_pawn_move_bb( Square sq ) const {
+std::vector<Move> Position::pseudo_legal_pawn_moves( Square sq ) const {
   /*
     Generates bitboard of 'normal' moves for a pawn on square <sq>
     such that the pawn is on the side of <this->to_attack()> i.e. the side
     to move.
   */
 
-  Bitboard move_pattern = EMPTY_BB;
+  std::vector<Move> moves;
   Bitboard sq_bb = SQUARE_TO_BB(sq);
   Bitboard to_promote_check = (this->to_attack() == WHITE ) ? RANK_7_BB:RANK_2_BB;
   Compass pawn_move_dir = (this->to_attack() == WHITE ) ? NORTH:SOUTH;
@@ -491,31 +501,30 @@ Bitboard Position::pseudo_legal_pawn_move_bb( Square sq ) const {
     Square move_fwd_sq = Square(sq + pawn_move_dir);
     if( this->piece_on(move_fwd_sq) == NO_PIECE ) {
       // Only move forward if there is nothing in the way!!!
-      move_pattern |= SQUARE_TO_BB(move_fwd_sq);
+      moves.push_back(Move(sq,move_fwd_sq));
     }
 
     if( Position::move_direction_before_edge(sq, pawn_attack_east)) {
       Square attack_east_sq = Square(sq+pawn_attack_east);
       if(Position::color(this->piece_on(attack_east_sq)) == this->to_defend()) {
-        move_pattern |= SQUARE_TO_BB(attack_east_sq);
+        moves.push_back(Move(sq,attack_east_sq));
       }
     }
 
     if( Position::move_direction_before_edge(sq, pawn_attack_west)) {
       Square attack_west_sq = Square(sq+pawn_attack_west);
       if(Position::color(this->piece_on(attack_west_sq)) == this->to_defend()) {
-        move_pattern |= SQUARE_TO_BB(attack_west_sq);
+        moves.push_back(Move(sq,attack_west_sq));
       }
     }
 
   }
 
-  return move_pattern;
+  return moves;
 }
-
-Bitboard Position::pseudo_legal_direction_move_bb(Square sq, Compass dir, bool propagate) const {
+Bitboard Position::pseudo_legal_direction_bitboard(Square sq, Compass dir, bool propagate) const {
   /*
-    Creates a bitboard of pseudo legal move squares given the direction
+    Creates a bitboard of pseudo legal moves squares given the direction
     from the square specified by <sq> where the direction is propagated
     until a edge is hit. 
     (only propogates the direction if <propagate> is true
@@ -566,5 +575,178 @@ Bitboard Position::pseudo_legal_direction_move_bb(Square sq, Compass dir, bool p
       if( next_square_bb & opponent_pieces ) return move_pattern;
     } while(Position::move_direction_before_edge(next_square,dir) && propagate);
   }
+
   return move_pattern;
+}
+std::vector<Move> Position::pseudo_legal_direction_moves(Square sq, Compass dir, bool propagate) const {
+  /*
+    Creates a vector of pseudo legal moves squares given the direction
+    from the square specified by <sq> where the direction is propagated
+    until a edge is hit. 
+    (only propogates the direction if <propagate> is true
+     else it'll only move in that direction once)
+    -> Does not check if move will put own king in check.
+    -> Does not include moves that capture or move over
+        <side_to_move> pieces
+    -> INCLUDES the 'first' capture on a given direction...
+    NOTE: Does not include the square <sq> in the op
+  */
+  std::vector<Move> moves;
+  Bitboard self_pieces = this->pieces(this->to_attack());
+  Bitboard opponent_pieces = this->pieces(this->to_defend());
+  if( Position::move_direction_before_edge(sq, dir)) {
+    Square next_square = sq;
+    do {
+      next_square = static_cast<Square>(next_square+dir);
+      Bitboard next_square_bb = SQUARE_TO_BB(next_square);
+      if( next_square_bb & self_pieces ) return moves;
+      moves.push_back(Move(sq,next_square));
+      if( next_square_bb & opponent_pieces ) return moves;
+    } while(Position::move_direction_before_edge(next_square,dir) && propagate);
+  }
+
+  return moves;
+}
+
+bool Position::is_attacked(Square sq) const {
+  /*
+    Returns true is square <sq> is attacked by color <this->to_defend()>
+    false otherwise
+  */
+  
+  Bitboard enemy_pieces = this->pieces(this->to_defend());
+  Bitboard tau = EMPTY_BB;
+  tau |= this->pseudo_legal_direction_bitboard(sq, NORTH, true);
+  tau |= this->pseudo_legal_direction_bitboard(sq, SOUTH, true);
+  tau |= this->pseudo_legal_direction_bitboard(sq, EAST, true);
+  tau |= this->pseudo_legal_direction_bitboard(sq, WEST, true);
+  tau &= enemy_pieces;
+  if( tau & this->pieces(ROOK) || tau & this->pieces(QUEEN)) return true;
+  tau = EMPTY_BB;
+  tau |= this->pseudo_legal_direction_bitboard(sq, NORTH_EAST, true);
+  tau |= this->pseudo_legal_direction_bitboard(sq, NORTH_WEST, true);
+  tau |= this->pseudo_legal_direction_bitboard(sq, SOUTH_EAST, true);
+  tau |= this->pseudo_legal_direction_bitboard(sq, SOUTH_WEST, true);
+  tau &= enemy_pieces;
+  if( tau & this->pieces(BISHOP) || tau & this->pieces(QUEEN)) return true;
+  tau = EMPTY_BB;
+  tau |= this->pseudo_legal_direction_bitboard(sq, NORTH_NORTH_EAST, false);
+  tau |= this->pseudo_legal_direction_bitboard(sq, NORTH_NORTH_WEST, false);
+  tau |= this->pseudo_legal_direction_bitboard(sq, SOUTH_SOUTH_EAST, false);
+  tau |= this->pseudo_legal_direction_bitboard(sq, SOUTH_SOUTH_WEST, false);
+  tau |= this->pseudo_legal_direction_bitboard(sq, NORTH_EAST_EAST, false);
+  tau |= this->pseudo_legal_direction_bitboard(sq, NORTH_WEST_WEST, false);
+  tau |= this->pseudo_legal_direction_bitboard(sq, SOUTH_EAST_EAST, false);
+  tau |= this->pseudo_legal_direction_bitboard(sq, SOUTH_WEST_WEST, false);
+  tau &= enemy_pieces;
+  if( tau & this->pieces(KNIGHT)) return true;
+  return false;
+}
+
+std::vector<Move> Position::pseudo_legal_special_moves(Square sq) const {
+  /*
+    Returns a vector of special moves, i.e. any move that:
+      Castles,
+      Performs En Passant,
+      or Promotes a pawn.
+  */
+
+  std::vector<Move> moves;
+  Bitboard sq_bb = SQUARE_TO_BB(sq);
+  PieceType peon = Position::type(this->piece_on(sq));
+  if(peon == PAWN) {
+    Bitboard all_pieces = this->pieces(WHITE) | this->pieces(BLACK);
+    Bitboard opponent_pieces = this->pieces(this->to_defend());
+    Bitboard promo_rank = (this->to_attack() == WHITE) ? RANK_7_BB:RANK_2_BB;
+    Compass  pawn_move_dir = (this->to_attack() == WHITE) ? NORTH : SOUTH;
+    // Promote
+    if( sq_bb & promo_rank ) {
+      Square move_fwd_sq = Square(sq + pawn_move_dir);
+      // Posibility to promote
+      if((SQUARE_TO_BB(move_fwd_sq) & all_pieces) == 0) {
+        moves.push_back(Move(sq,move_fwd_sq,Move::PROMOTE_KNIGHT));
+        moves.push_back(Move(sq,move_fwd_sq,Move::PROMOTE_BISHOP));
+        moves.push_back(Move(sq,move_fwd_sq,Move::PROMOTE_ROOK));
+        moves.push_back(Move(sq,move_fwd_sq,Move::PROMOTE_QUEEN));
+      }
+
+      if( Position::move_direction_before_edge(sq,WEST) ) {
+        Square west_attack = Square(sq+pawn_move_dir+WEST);
+        // CAN CHECK FOR ATTACK WEST
+        if(SQUARE_TO_BB(west_attack) & opponent_pieces) {
+          moves.push_back(Move(sq,west_attack,Move::PROMOTE_KNIGHT));
+          moves.push_back(Move(sq,west_attack,Move::PROMOTE_BISHOP));
+          moves.push_back(Move(sq,west_attack,Move::PROMOTE_ROOK));
+          moves.push_back(Move(sq,west_attack,Move::PROMOTE_QUEEN));
+        }
+      }
+      if( Position::move_direction_before_edge(sq,EAST) ) {
+        Square east_attack = Square(sq+pawn_move_dir+EAST);
+        // CAN CHECK FOR ATTACK EAST
+        if( SQUARE_TO_BB(east_attack) & opponent_pieces) {
+          moves.push_back(Move(sq,east_attack,Move::PROMOTE_KNIGHT));
+          moves.push_back(Move(sq,east_attack,Move::PROMOTE_BISHOP));
+          moves.push_back(Move(sq,east_attack,Move::PROMOTE_ROOK));
+          moves.push_back(Move(sq,east_attack,Move::PROMOTE_QUEEN));
+        }
+      }
+      
+    } 
+
+    Square ep_target = this->en_passant_target();
+    // En Passant
+    if(ep_target != NO_SQUARE) {
+      if(Position::move_direction_before_edge(sq,WEST)) {
+        // Check WEST
+        Square west_attack_sq = static_cast<Square>(ep_target - pawn_move_dir + WEST );
+        if(west_attack_sq == sq) moves.push_back(Move(sq,ep_target,Move::EN_PASSANT));
+      }
+
+      if(Position::move_direction_before_edge(sq,EAST)) {
+        // Check EAST
+        Square east_attack_sq = static_cast<Square>(ep_target - pawn_move_dir + EAST);
+        if(east_attack_sq == sq) moves.push_back(Move(sq,ep_target,Move::EN_PASSANT));
+      }
+
+    }
+  }
+  else if( peon == KING ) {
+    // Check for CastleRight
+    // Check if Castle squares are attacked by enemy pieces
+
+    switch(this->to_attack()) {
+      case WHITE:
+
+        if(this->has_castle_right(WHITE_SHORT_CASTLE)) {
+          if(!this->is_attacked(e1) && !this->is_attacked(f1) && !this->is_attacked(g1)) {
+            moves.push_back(Move(e1,g1,Move::CASTLE));
+          }
+        }
+
+        if(this->has_castle_right(WHITE_LONG_CASTLE)) {
+          if(!this->is_attacked(e1) && !this->is_attacked(d1) && !this->is_attacked(c1)) {
+            moves.push_back(Move(e1,c1,Move::CASTLE));
+          }
+        }
+        break;
+      case BLACK:
+        if(this->has_castle_right(BLACK_SHORT_CASTLE)) {
+          if(!this->is_attacked(e8) && !this->is_attacked(f8) && !this->is_attacked(g8)) {
+            moves.push_back(Move(e8,g8,Move::CASTLE));
+          }
+        }
+
+        if(this->has_castle_right(BLACK_LONG_CASTLE)) {
+          if(!this->is_attacked(e8) && !this->is_attacked(d8) && !this->is_attacked(c8)) {
+            moves.push_back(Move(e8,c8,Move::CASTLE));
+          }
+        }
+        break;
+      default:
+        break;
+
+    }
+
+  } 
+  return moves;
 }

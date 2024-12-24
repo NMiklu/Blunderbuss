@@ -10,6 +10,16 @@ const Bitboard file_bbs[8] = {FILE_A_BB, FILE_B_BB, FILE_C_BB, FILE_D_BB,
                               FILE_E_BB, FILE_F_BB, FILE_G_BB, FILE_H_BB};
 const PieceType piece_types[6] = {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING};
 const Color     piece_colors[2] = {WHITE, BLACK};
+const Square    rank_file_sqs[8][8] = {
+                                        {a1,b1,c1,d1,e1,f1,g1,h1},
+                                        {a2,b2,c2,d2,e2,f2,g2,h2},
+                                        {a3,b3,c3,d3,e3,f3,g3,h3},
+                                        {a4,b4,c4,d4,e4,f4,g4,h4},
+                                        {a5,b5,c5,d5,e5,f5,g5,h5},
+                                        {a6,b6,c6,d6,e6,f6,g6,h6},
+                                        {a7,b7,c7,d7,e7,f7,g7,h7},
+                                        {a8,b8,c8,d8,e8,f8,g8,h8}
+                                      };
 
 
 class PositionTests {
@@ -36,8 +46,11 @@ public:
     PositionTests::fen_test(); // TODO
     PositionTests::to_attack_test();
     PositionTests::to_defend_test();
+    PositionTests::move_direction_before_edge_sq_test();
+    PositionTests::move_direction_before_edge_bb_test();
 
-    PositionTests::pseudo_legal_pawn_move_bb_test();
+    PositionTests::pseudo_legal_pawn_moves_test();
+    PositionTests::pseudo_legal_normal_moves_test();
   }
   /* UNIT TESTS */
   static void copy_test() {}
@@ -401,10 +414,311 @@ public:
     delete p;
   }
 
-  static void move_direction_before_edge_sq_test() {} //TODO
-  static void move_direction_before_edge_bb_test() {} //DOOT
-  static void pseudo_legal_normal_move_bb_test() {} //TODO
-  static void pseudo_legal_pawn_move_bb_test() {
+  static void move_direction_before_edge_sq_test() {
+    Square cant_move_west_sqs[8] = {a1,a2,a3,a4,a5,a6,a7,a8};
+    Square cant_move_east_sqs[8] = {h1,h2,h3,h4,h5,h6,h7,h8};
+    Square cant_move_north_sqs[8] = {a8,b8,c8,d8,e8,f8,g8,h8};
+    Square cant_move_south_sqs[8] = {a1,b1,c1,d1,e1,f1,g1,h1};
+
+    Square rank_7_sqs[8] = {a7,b7,c7,d7,e7,f7,g7,h7};
+    Square rank_2_sqs[8] = {a2,b2,c2,d2,e2,f2,g2,h2};
+    Square file_b_sqs[8] = {b1,b2,b3,b4,b5,b6,b7,b8};
+    Square file_g_sqs[8] = {g1,g2,g3,g4,g5,g6,g7,g8};
+
+
+    // Assert that you may NOT go in a direction
+    for( int i = 0; i < 8; i++) {
+      //  NOT NORTH
+      assert(!Position::move_direction_before_edge(cant_move_north_sqs[i],NORTH));
+      //  NOT SOUTH
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH));
+      // NOT WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_sqs[i],WEST));
+      // NOT EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_sqs[i],EAST));
+      // NOT NORTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_sqs[i],NORTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_north_sqs[i],NORTH_EAST));
+      // NOT NORTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_sqs[i],NORTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_north_sqs[i],NORTH_WEST));
+      // NOT SOUTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_sqs[i],SOUTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH_EAST));
+      // NOT SOUTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_sqs[i],SOUTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH_WEST));
+      // NOT NORTH_NORTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_sqs[i],NORTH_NORTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_north_sqs[i],NORTH_NORTH_EAST));
+      assert(!Position::move_direction_before_edge(rank_7_sqs[i],NORTH_NORTH_EAST));
+      // NOT NORTH_NORTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_sqs[i],NORTH_NORTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_north_sqs[i],NORTH_NORTH_WEST));
+      assert(!Position::move_direction_before_edge(rank_7_sqs[i],NORTH_NORTH_WEST));
+      // NOT NORTH_EAST_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_sqs[i],NORTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_north_sqs[i],NORTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(file_g_sqs[i],NORTH_EAST_EAST));
+      // NOT SOUTH_EAST_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_sqs[i],SOUTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(file_g_sqs[i],SOUTH_EAST_EAST));
+      // NOT SOUTH_SOUTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_sqs[i],SOUTH_SOUTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH_SOUTH_EAST));
+      assert(!Position::move_direction_before_edge(rank_2_sqs[i],SOUTH_SOUTH_EAST));
+      // NOT SOUTH_SOUTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_sqs[i],SOUTH_SOUTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH_SOUTH_WEST));
+      assert(!Position::move_direction_before_edge(rank_2_sqs[i],SOUTH_SOUTH_WEST));
+      // NOT SOUTH_WEST_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_sqs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(file_b_sqs[i],SOUTH_WEST_WEST));
+      // NOT NORTH_WEST_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_sqs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_sqs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(file_b_sqs[i],SOUTH_WEST_WEST));
+    }
+
+
+    const char file_char[8] = {'a','b','c','d','e','f','g','h'};
+    // Assert that you may move in a direction
+    for( int rank_idx = 0; rank_idx < 8; rank_idx++) {
+      for( int file_idx = 0; file_idx < 8; file_idx++) {
+        Square sq = rank_file_sqs[rank_idx][file_idx];
+
+        const int rank = rank_idx+1;
+        const char file = file_char[file_idx];
+        
+        if( rank != 8 ) {
+          // MAY MOVE NORTH
+          assert(Position::move_direction_before_edge(sq,NORTH));
+        }
+        if( rank != 1 ) {
+          // MAY MOVE SOUTH
+          assert(Position::move_direction_before_edge(sq,SOUTH));
+        }
+        if( file != 'h' ) {
+          // MAY MOVE EAST
+          assert(Position::move_direction_before_edge(sq,EAST));
+        }
+        if( file != 'a') {
+          // MAY MOVE WEST
+          assert(Position::move_direction_before_edge(sq,WEST));
+        }
+
+        if(file != 'h' && rank != 8) {
+          // MAY MOVE NORTH_EAST
+          assert(Position::move_direction_before_edge(sq,NORTH_EAST));
+
+          if(rank != 7) {
+            // MAY MOVE NORTH_NORTH_EAST
+            assert(Position::move_direction_before_edge(sq,NORTH_NORTH_EAST));
+          }
+
+          if(file != 'g') {
+            // MAY MOVE NORTH_EAST_EAST
+            assert(Position::move_direction_before_edge(sq,NORTH_EAST_EAST));
+          }
+
+        }
+        if(file != 'a' && rank != 8) {
+          // MAY MOVE NORTH_WEST
+          assert(Position::move_direction_before_edge(sq,NORTH_WEST));
+          if(rank != 7) {
+            // MAY MOVE NORTH_NORTH_WEST
+            assert(Position::move_direction_before_edge(sq,NORTH_NORTH_WEST));
+          }
+          if(file != 'b') {
+            // MAY MOVE NORTH_WEST_WEST
+            assert(Position::move_direction_before_edge(sq,NORTH_WEST_WEST));
+          }
+        }
+
+        if(file != 'h' && rank != 1) {
+          // MAY MOVE SOUTH_EAST
+          assert(Position::move_direction_before_edge(sq,SOUTH_EAST));
+          if(rank != 2) {
+            // MAY MOVE SOUTH_SOUTH_EAST
+            assert(Position::move_direction_before_edge(sq,SOUTH_SOUTH_EAST));
+          }
+          if(file != 'g') {
+            // MAY MOVE SOUTH_EAST_EAST
+            assert(Position::move_direction_before_edge(sq,SOUTH_EAST_EAST));
+          }
+        }
+        if(file != 'a' && rank != 1) {
+          // MAY MOVE SOUTH_WEST
+          assert(Position::move_direction_before_edge(sq,SOUTH_WEST));
+          if(rank != 2) {
+            // MAY MOVE SOUTH_SOUTH_WEST
+            assert(Position::move_direction_before_edge(sq,SOUTH_SOUTH_WEST));
+          }
+          if(file != 'b') {
+            // MAY MOVE SOUTH_WEST_WEST
+            assert(Position::move_direction_before_edge(sq,SOUTH_WEST_WEST));
+          }
+        }
+      }
+    }
+
+  }
+
+  static void move_direction_before_edge_bb_test() {
+    std::vector<Bitboard> cant_move_west_bbs = Bitboard_Debug::discretize(FILE_A_BB);
+    std::vector<Bitboard> cant_move_east_bbs = Bitboard_Debug::discretize(FILE_H_BB);
+    std::vector<Bitboard> cant_move_north_bbs = Bitboard_Debug::discretize(RANK_8_BB);
+    std::vector<Bitboard> cant_move_south_bbs = Bitboard_Debug::discretize(RANK_1_BB);
+
+    std::vector<Bitboard> rank_7_bbs = Bitboard_Debug::discretize(RANK_7_BB);
+    std::vector<Bitboard> rank_2_bbs = Bitboard_Debug::discretize(RANK_2_BB);
+    std::vector<Bitboard> file_b_bbs = Bitboard_Debug::discretize(FILE_B_BB);
+    std::vector<Bitboard> file_g_bbs = Bitboard_Debug::discretize(FILE_G_BB);
+
+
+    // Assert that you may NOT go in a direction
+    for( int i = 0; i < 8; i++) {
+      //  NOT NORTH
+      assert(!Position::move_direction_before_edge(cant_move_north_bbs[i],NORTH));
+      //  NOT SOUTH
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH));
+      // NOT WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_bbs[i],WEST));
+      // NOT EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_bbs[i],EAST));
+      // NOT NORTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_bbs[i],NORTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_north_bbs[i],NORTH_EAST));
+      // NOT NORTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_bbs[i],NORTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_north_bbs[i],NORTH_WEST));
+      // NOT SOUTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_bbs[i],SOUTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH_EAST));
+      // NOT SOUTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_bbs[i],SOUTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH_WEST));
+      // NOT NORTH_NORTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_bbs[i],NORTH_NORTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_north_bbs[i],NORTH_NORTH_EAST));
+      assert(!Position::move_direction_before_edge(rank_7_bbs[i],NORTH_NORTH_EAST));
+      // NOT NORTH_NORTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_bbs[i],NORTH_NORTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_north_bbs[i],NORTH_NORTH_WEST));
+      assert(!Position::move_direction_before_edge(rank_7_bbs[i],NORTH_NORTH_WEST));
+      // NOT NORTH_EAST_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_bbs[i],NORTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_north_bbs[i],NORTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(file_g_bbs[i],NORTH_EAST_EAST));
+      // NOT SOUTH_EAST_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_bbs[i],SOUTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH_EAST_EAST));
+      assert(!Position::move_direction_before_edge(file_g_bbs[i],SOUTH_EAST_EAST));
+      // NOT SOUTH_SOUTH_EAST
+      assert(!Position::move_direction_before_edge(cant_move_east_bbs[i],SOUTH_SOUTH_EAST));
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH_SOUTH_EAST));
+      assert(!Position::move_direction_before_edge(rank_2_bbs[i],SOUTH_SOUTH_EAST));
+      // NOT SOUTH_SOUTH_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_bbs[i],SOUTH_SOUTH_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH_SOUTH_WEST));
+      assert(!Position::move_direction_before_edge(rank_2_bbs[i],SOUTH_SOUTH_WEST));
+      // NOT SOUTH_WEST_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_bbs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(file_b_bbs[i],SOUTH_WEST_WEST));
+      // NOT NORTH_WEST_WEST
+      assert(!Position::move_direction_before_edge(cant_move_west_bbs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(cant_move_south_bbs[i],SOUTH_WEST_WEST));
+      assert(!Position::move_direction_before_edge(file_b_bbs[i],SOUTH_WEST_WEST));
+    }
+
+
+    const char file_char[8] = {'a','b','c','d','e','f','g','h'};
+    // Assert that you may move in a direction
+    for( int rank_idx = 0; rank_idx < 8; rank_idx++) {
+      for( int file_idx = 0; file_idx < 8; file_idx++) {
+        Bitboard bb = SQUARE_TO_BB(rank_file_sqs[rank_idx][file_idx]);
+
+        const int rank = rank_idx+1;
+        const char file = file_char[file_idx];
+        
+        if( rank != 8 ) {
+          // MAY MOVE NORTH
+          assert(Position::move_direction_before_edge(bb,NORTH));
+        }
+        if( rank != 1 ) {
+          // MAY MOVE SOUTH
+          assert(Position::move_direction_before_edge(bb,SOUTH));
+        }
+        if( file != 'h' ) {
+          // MAY MOVE EAST
+          assert(Position::move_direction_before_edge(bb,EAST));
+        }
+        if( file != 'a') {
+          // MAY MOVE WEST
+          assert(Position::move_direction_before_edge(bb,WEST));
+        }
+
+        if(file != 'h' && rank != 8) {
+          // MAY MOVE NORTH_EAST
+          assert(Position::move_direction_before_edge(bb,NORTH_EAST));
+
+          if(rank != 7) {
+            // MAY MOVE NORTH_NORTH_EAST
+            assert(Position::move_direction_before_edge(bb,NORTH_NORTH_EAST));
+          }
+
+          if(file != 'g') {
+            // MAY MOVE NORTH_EAST_EAST
+            assert(Position::move_direction_before_edge(bb,NORTH_EAST_EAST));
+          }
+
+        }
+        if(file != 'a' && rank != 8) {
+          // MAY MOVE NORTH_WEST
+          assert(Position::move_direction_before_edge(bb,NORTH_WEST));
+          if(rank != 7) {
+            // MAY MOVE NORTH_NORTH_WEST
+            assert(Position::move_direction_before_edge(bb,NORTH_NORTH_WEST));
+          }
+          if(file != 'b') {
+            // MAY MOVE NORTH_WEST_WEST
+            assert(Position::move_direction_before_edge(bb,NORTH_WEST_WEST));
+          }
+        }
+
+        if(file != 'h' && rank != 1) {
+          // MAY MOVE SOUTH_EAST
+          assert(Position::move_direction_before_edge(bb,SOUTH_EAST));
+          if(rank != 2) {
+            // MAY MOVE SOUTH_SOUTH_EAST
+            assert(Position::move_direction_before_edge(bb,SOUTH_SOUTH_EAST));
+          }
+          if(file != 'g') {
+            // MAY MOVE SOUTH_EAST_EAST
+            assert(Position::move_direction_before_edge(bb,SOUTH_EAST_EAST));
+          }
+        }
+        if(file != 'a' && rank != 1) {
+          // MAY MOVE SOUTH_WEST
+          assert(Position::move_direction_before_edge(bb,SOUTH_WEST));
+          if(rank != 2) {
+            // MAY MOVE SOUTH_SOUTH_WEST
+            assert(Position::move_direction_before_edge(bb,SOUTH_SOUTH_WEST));
+          }
+          if(file != 'b') {
+            // MAY MOVE SOUTH_WEST_WEST
+            assert(Position::move_direction_before_edge(bb,SOUTH_WEST_WEST));
+          }
+        }
+      }
+    }
+  } 
+  static void pseudo_legal_normal_moves_test() {} //TODO
+  static void pseudo_legal_pawn_moves_test() {
+    // TODO UPDATE
     Bitboard e4_bb = SQUARE_TO_BB(e4);
     Bitboard e5_bb = SQUARE_TO_BB(e5);
     Bitboard f5_bb = SQUARE_TO_BB(f5);
@@ -415,8 +729,10 @@ public:
     p->colorBB[WHITE] |= e4_bb;
     p->pieceTypeBB[PAWN] |= e4_bb;
     p->pieceBySquare[e4] = W_PAWN;
-    Bitboard move_check = SQUARE_TO_BB(e5);
-    assert(p->pseudo_legal_pawn_move_bb(e4) == move_check);
+    std::vector<Move> tau1 = p->pseudo_legal_pawn_moves(e4);
+    assert(tau1.size() ==1 );
+    assert(tau1[0].raw() == Move(e4,e5).raw());
+    
     
     p->colorBB[BLACK] |= f5_bb;
     p->pieceTypeBB[PAWN] |= f5_bb;
@@ -424,21 +740,30 @@ public:
     p->colorBB[BLACK] |= d5_bb;
     p->pieceTypeBB[PAWN] |= d5_bb;
     p->pieceBySquare[d5] = B_PAWN;
-    move_check |= SQUARE_TO_BB(f5);
-    move_check |= SQUARE_TO_BB(d5);
-    assert(p->pseudo_legal_pawn_move_bb(e4) == move_check);
 
+    std::vector<Move> tau2 = p->pseudo_legal_pawn_moves(e4);
+    assert(tau2.size() == 3);
+    assert(tau2[0].raw() != tau2[1].raw() && tau2[1].raw() != tau2[2].raw() && tau2[0].raw() != tau2[2].raw());
+    assert(tau2[0].raw() == Move(e4,f5).raw() || tau2[0].raw() == Move(e4,d5).raw() || tau2[0].raw() == Move(e4,e5).raw());
+    assert(tau2[1].raw() == Move(e4,f5).raw() || tau2[1].raw() == Move(e4,d5).raw() || tau2[1].raw() == Move(e4,e5).raw());
+    assert(tau2[2].raw() == Move(e4,f5).raw() || tau2[2].raw() == Move(e4,d5).raw() || tau2[2].raw() == Move(e4,e5).raw());
+    
     p->colorBB[BLACK] |= e5_bb;
     p->pieceTypeBB[PAWN] |= e5_bb;
     p->pieceBySquare[e5] = B_PAWN;
-    move_check &= ~(SQUARE_TO_BB(e5));
-    assert((p->pseudo_legal_pawn_move_bb(e4) == move_check));
+
+    std::vector<Move> phi = p->pseudo_legal_pawn_moves(e4);
+    assert(phi.size() == 2);
+    assert(phi[0].raw() != phi[1].raw());
+    assert(phi[0].raw() == Move(e4,f5).raw() || phi[0].raw() == Move(e4,d5).raw());
+    assert(phi[1].raw() == Move(e4,f5).raw() || phi[1].raw() == Move(e4,d5).raw());
 
     p->side_to_move = BLACK;
     p->colorBB[BLACK] |= SQUARE_TO_BB(a2);
     p->pieceTypeBB[PAWN] |= SQUARE_TO_BB(a2);
     p->pieceBySquare[a2] = B_PAWN;
-    assert(p->pseudo_legal_pawn_move_bb(a2) == EMPTY_BB);
+    assert(p->pseudo_legal_pawn_moves(a2).size() == 0);
+
     delete p;
 
     Position* p2 = new Position();
@@ -449,12 +774,84 @@ public:
     p2->pieceTypeBB[PAWN] |= SQUARE_TO_BB(e5);
     p2->pieceBySquare[e4] = W_PAWN;
     p2->pieceBySquare[e5] = B_PAWN;
-    assert(p->pseudo_legal_pawn_move_bb(e5) == EMPTY_BB);
+    
+    assert(p->pseudo_legal_pawn_moves(e5).size() == 0);
 
     delete p2;
 
   }
-  static void pseudo_legal_direction_move_bb_test() {} // DOOT
+  static void pseudo_legal_direction_moves_test() {
+    // Check propogate
+    // Check we cant capture own pieces
+    // Check we capture first enemy piece
+    { // Capture enemy piece
+      Position* p = new Position();
+      // White king on e4
+      p->side_to_move = WHITE;
+      p->colorBB[WHITE] |= SQUARE_TO_BB(e4);
+      p->pieceTypeBB[KING] |= SQUARE_TO_BB(e4);
+      p->pieceBySquare[e4] = W_KING;
+
+      // Black rook on f5
+      p->colorBB[BLACK] |= SQUARE_TO_BB(f5);
+      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(f5);
+      p->pieceBySquare[f5] = B_ROOK;
+
+      Move expected = Move(e4,f5);
+      std::vector<Move> generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,false);
+      assert(generated[0].raw() == expected.raw());
+      delete p;
+    }
+    { // Capture enemy piece  w/ propogation -> Only capture first piece
+      Position* p = new Position();
+      // White king on e4
+      p->side_to_move = WHITE;
+      p->colorBB[WHITE] |= SQUARE_TO_BB(e4);
+      p->pieceTypeBB[KING] |= SQUARE_TO_BB(e4);
+      p->pieceBySquare[e4] = W_KING;
+      
+      // Black rook on g6
+      p->colorBB[BLACK] |= SQUARE_TO_BB(g6);
+      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(g6);
+      p->pieceBySquare[g6] = B_ROOK;
+
+      // Black rook on h7
+      p->colorBB[BLACK] |= SQUARE_TO_BB(h7);
+      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(h7);
+      p->pieceBySquare[h7] = B_ROOK;
+
+      Move g6_move = Move(e4,g6);
+      Move f5_move = Move(e4,f5);
+      std::vector<Move> prop_generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,true);
+      std::vector<Move> no_prop_generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,false);
+      assert(no_prop_generated.size() == 1);
+      assert(no_prop_generated[0].raw() == f5_move.raw());
+      assert(prop_generated.size() == 2);
+      assert(prop_generated[0].raw() == f5_move.raw());
+      assert(prop_generated[1].raw() == g6_move.raw());
+      delete p;
+    }
+    { // CANT capture own piece
+      Position* p = new Position();
+      // White king on e4
+      p->side_to_move = WHITE;
+      p->colorBB[WHITE] |= SQUARE_TO_BB(e4);
+      p->pieceTypeBB[KING] |= SQUARE_TO_BB(e4);
+      p->pieceBySquare[e4] = W_KING;
+      // White rook on g6
+      p->colorBB[WHITE] |= SQUARE_TO_BB(g6);
+      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(g6);
+      p->pieceBySquare[g6] = W_ROOK;
+
+      std::vector<Move> generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,true);
+      assert(generated.size() == 1);
+      assert(generated[0].raw() == Move(e4,g5).raw());
+
+      delete p;
+    }
+  }
+
+
 };
 
 
