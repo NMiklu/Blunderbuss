@@ -115,8 +115,10 @@ enum Piece : uint8_t {
 enum CastleRight : uint8_t {
   WHITE_SHORT_CASTLE  = 0b1000,
   WHITE_LONG_CASTLE   = 0b0100,
+  WHITE_CASTLE        = 0b1100,
   BLACK_SHORT_CASTLE  = 0b0010,
-  BLACK_LONG_CASTLE   = 0b0001
+  BLACK_LONG_CASTLE   = 0b0001,
+  BLACK_CASTLE        = 0b0011
 };
 
 struct Move {
@@ -151,7 +153,7 @@ struct Move {
     _data( flag + ((initial << 6) + final ) ) {}
   ~Move() = default;
 
-  constexpr Square inital_square() const {
+  constexpr Square initial_square() const {
     return Square((_data >> 6) & 0b111111);
   }
   constexpr Square final_square() const {

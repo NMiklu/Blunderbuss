@@ -17,6 +17,8 @@ class Position {
     static Position* copy(const Position& pos); 
     static Color color(Piece p);    
     static PieceType type(Piece p);
+    static Piece to_piece(Color c, PieceType t);
+    static Square to_square(Bitboard single_pop_bb);
     static bool move_direction_before_edge(Square sq, Compass dir);
     static bool move_direction_before_edge(Bitboard sq, Compass dir);
 
@@ -28,12 +30,13 @@ class Position {
     Square en_passant_target() const; 
     Piece piece_on( Square sq ) const;
     bool is_attacked(Square sq) const;
-    void pretty(std::ostream& os) const; 
+    void pretty(std::ostream& os) const;
 
     bool fen(std::string fen_string); // TODO
     void reset();
     bool put( Square sq, Piece p ); 
-    void remove(Square sq); 
+    void remove(Square sq);
+
     void add_castle_right(CastleRight right);
     bool has_castle_right(CastleRight right) const;
     void revoke_castle_right(CastleRight right);
@@ -42,16 +45,23 @@ class Position {
     uint8_t halfmove() const;
     uint16_t fullmove() const;
 
+    void make_move(const Move& m);
+    //std::vector<Move> legal_moves() const;
+
   private:
 
 
     Bitboard pseudo_legal_direction_bitboard(Square sq, Compass dir, bool propogate) const;
+    std::vector<Square> pseudo_legal_direction_squares(Square sq, Compass dir, bool propagate) const;
     std::vector<Move> pseudo_legal_normal_moves(Square sq) const;
     std::vector<Move> pseudo_legal_pawn_moves(Square sq) const;
-    std::vector<Move> pseudo_legal_direction_moves(Square sq, Compass dir, bool propagate) const;
-    std::vector<Move> pseudo_legal_special_moves(Square sq) const;
+    std::vector<Move> pseudo_legal_promo_moves(Square sq) const;
+    std::vector<Move> pseudo_legal_ep_moves(Square sq) const;
+    std::vector<Move> pseudo_legal_castle_moves(Square sq) const;
 
-    bool _VALID_REP() const; 
+    static bool pseudo_legal_move_is_legal(const Position& pos, const Move& m);
+
+    bool _VALID_REP() const;
 
     Bitboard          colorBB[COLOR_BOUND] = {0ULL};
     Bitboard          pieceTypeBB[PIECE_TYPE_BOUND] = {0ULL};

@@ -25,7 +25,66 @@ const Square    rank_file_sqs[8][8] = {
 class PositionTests {
 public:
 
+  static Position* starting_position() {
+    Position* p = new Position();
+    p->side_to_move = WHITE;
+    p->castleRightMask = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
+    p->half_move_clock = 0;
+    p->full_move_clock = 0;
+    p->en_passant_target_square = NO_SQUARE;
+
+    p->pieceBySquare[a2] = W_PAWN;
+    p->pieceBySquare[b2] = W_PAWN;
+    p->pieceBySquare[c2] = W_PAWN;
+    p->pieceBySquare[d2] = W_PAWN;
+    p->pieceBySquare[e2] = W_PAWN;
+    p->pieceBySquare[f2] = W_PAWN;
+    p->pieceBySquare[g2] = W_PAWN;
+    p->pieceBySquare[h2] = W_PAWN;
+    p->pieceBySquare[a1] = W_ROOK;
+    p->pieceBySquare[b1] = W_KNIGHT;
+    p->pieceBySquare[c1] = W_BISHOP;
+    p->pieceBySquare[d1] = W_QUEEN;
+    p->pieceBySquare[e1] = W_KING;
+    p->pieceBySquare[f1] = W_BISHOP;
+    p->pieceBySquare[g1] = W_KNIGHT;
+    p->pieceBySquare[h1] = W_ROOK;
+
+    p->pieceBySquare[a7] = B_PAWN;
+    p->pieceBySquare[b7] = B_PAWN;
+    p->pieceBySquare[c7] = B_PAWN;
+    p->pieceBySquare[d7] = B_PAWN;
+    p->pieceBySquare[e7] = B_PAWN;
+    p->pieceBySquare[f7] = B_PAWN;
+    p->pieceBySquare[g7] = B_PAWN;
+    p->pieceBySquare[h7] = B_PAWN;
+    p->pieceBySquare[a8] = B_ROOK;
+    p->pieceBySquare[b8] = B_KNIGHT;
+    p->pieceBySquare[c8] = B_BISHOP;
+    p->pieceBySquare[d8] = B_QUEEN;
+    p->pieceBySquare[e8] = B_KING;
+    p->pieceBySquare[f8] = B_BISHOP;
+    p->pieceBySquare[g8] = B_KNIGHT;
+    p->pieceBySquare[h8] = B_ROOK;
+
+    p->pieceTypeBB[PAWN] = (RANK_7_BB | RANK_2_BB);
+    p->pieceTypeBB[ROOK] = (CORNER_BB);
+    p->pieceTypeBB[KNIGHT] = (SQUARE_TO_BB(b1) | SQUARE_TO_BB(g1) | SQUARE_TO_BB(b8) | SQUARE_TO_BB(g8));
+    p->pieceTypeBB[BISHOP] =  (SQUARE_TO_BB(f1) | SQUARE_TO_BB(c1) | SQUARE_TO_BB(f8) | SQUARE_TO_BB(c8) );
+    p->pieceTypeBB[QUEEN] = SQUARE_TO_BB(d1) | SQUARE_TO_BB(d8);
+    p->pieceTypeBB[KING] = SQUARE_TO_BB(e1) | SQUARE_TO_BB(e8);
+
+    p->colorBB[WHITE] = (RANK_1_BB | RANK_2_BB);
+    p->colorBB[BLACK] = (RANK_7_BB | RANK_8_BB);
+
+    return p;
+  }
+
   static void unit_tests() {
+
+    PositionTests::to_square_test();
+    PositionTests::to_piece_test();
+    PositionTests::copy_test();
     PositionTests::color_test();
     PositionTests::type_test();
     PositionTests::pieces_Piece_test();
@@ -48,12 +107,68 @@ public:
     PositionTests::to_defend_test();
     PositionTests::move_direction_before_edge_sq_test();
     PositionTests::move_direction_before_edge_bb_test();
-
-    PositionTests::pseudo_legal_pawn_moves_test();
-    PositionTests::pseudo_legal_normal_moves_test();
   }
+
   /* UNIT TESTS */
-  static void copy_test() {}
+  static void to_square_test() {
+    assert(Position::to_square(0) == NO_SQUARE);
+    for( int i = 0; i < Position::SQUARE_LIMIT; i++ ) {
+      Square sq = Square(i);
+      Bitboard sq_bb = SQUARE_TO_BB(sq);
+      assert(Position::to_square(sq_bb) == sq);
+    }
+  }
+  static void to_piece_test() {
+    Color c[COLOR_BOUND] = { WHITE, BLACK };
+    PieceType pt[PIECE_TYPE_BOUND] = {PAWN,KNIGHT,BISHOP,ROOK,QUEEN,KING};
+    Piece tau[COLOR_BOUND][PIECE_TYPE_BOUND] =
+          { {W_PAWN,W_KNIGHT,W_BISHOP,W_ROOK,W_QUEEN,W_KING} ,
+            {B_PAWN,B_KNIGHT,B_BISHOP,B_ROOK,B_QUEEN,B_KING} };
+
+    for( int i = 0; i < COLOR_BOUND; i++ ) {
+      for( int j = 0; j < PIECE_TYPE_BOUND; j++ ) {
+        assert(Position::to_piece(c[i],pt[j]) == tau[i][j]);
+      }
+    }
+  }
+  static void copy_test() {
+      Position* p = PositionTests::starting_position();
+      p->side_to_move = BLACK;
+      p->castleRightMask &= ~(WHITE_SHORT_CASTLE);
+      p->half_move_clock = 0;
+      p->full_move_clock = 1;
+
+      p->colorBB[WHITE] |= SQUARE_TO_BB(e4);
+      p->pieceTypeBB[PAWN] |= SQUARE_TO_BB(e4);
+      p->pieceBySquare[e4] = W_PAWN;
+
+      p->colorBB[WHITE] &= ~SQUARE_TO_BB(e2);
+      p->pieceTypeBB[PAWN] &= ~SQUARE_TO_BB(e2);
+      p->pieceBySquare[e2] = NO_PIECE;
+
+      p->en_passant_target_square = e3;
+
+      Position* q = Position::copy(*p);
+
+      for( int i = 0; i < COLOR_BOUND; i++ ) {
+        assert(p->colorBB[i] == q->colorBB[i]);
+      }
+      for( int i = 0; i < PIECE_TYPE_BOUND; i++ ) {
+        assert( p->pieceTypeBB[i] == q->pieceTypeBB[i] );
+      }
+      for( int i = 0; i < Position::SQUARE_LIMIT; i++ ) {
+        assert( p->pieceBySquare[i] == q->pieceBySquare[i] );
+      }
+      assert(p->en_passant_target_square == q->en_passant_target_square);
+      assert(p->side_to_move == q->side_to_move);
+      assert(p->castleRightMask == q->castleRightMask);
+      assert(p->half_move_clock == q->half_move_clock);
+      assert(p->full_move_clock == q->full_move_clock);
+
+
+      delete p;
+      delete q;
+  }
   static void color_test() {
     Piece w_ps[6] = {W_PAWN,W_KNIGHT,W_BISHOP,W_ROOK,W_QUEEN,W_KING};
     Piece b_ps[6] = {B_PAWN,B_KNIGHT,B_BISHOP,B_ROOK,B_QUEEN,B_KING};
@@ -715,42 +830,51 @@ public:
         }
       }
     }
-  } 
-  static void pseudo_legal_normal_moves_test() {} //TODO
-  static void pseudo_legal_pawn_moves_test() {
-    // TODO UPDATE
-    Bitboard e4_bb = SQUARE_TO_BB(e4);
-    Bitboard e5_bb = SQUARE_TO_BB(e5);
-    Bitboard f5_bb = SQUARE_TO_BB(f5);
-    Bitboard d5_bb = SQUARE_TO_BB(d5);
-    Position* p = new Position();
-    p->side_to_move = WHITE;
+  }
 
-    p->colorBB[WHITE] |= e4_bb;
-    p->pieceTypeBB[PAWN] |= e4_bb;
-    p->pieceBySquare[e4] = W_PAWN;
+
+
+  /* Integration tests */
+  static void integration_tests() {
+    // TODO
+    // pseudo_legal_move_is_legal
+    // make_move
+    // PositionTests::pseudo_legal_normal_moves_test();
+    // pseudo_legal_direction_bitboard
+    // pseudo_legal_promo_moves
+    // pseudo_legal_ep_moves
+    // pseudo_legal_castle_moves
+
+    /* Move Generation Tests */
+    PositionTests::make_move_test();
+    PositionTests::pseudo_legal_direction_squares_test();
+    PositionTests::pseudo_legal_pawn_moves_test();
+
+  }
+  static void make_move_test() { // TODO finish
+    Position* p = PositionTests::starting_position();
+    p->make_move(Move(e2,e4));
+    p->pretty(std::cout);
+  }
+  static void pseudo_legal_pawn_moves_test() {
+
+    Position* p = new Position();
+    p->put(e4, W_PAWN);
+
     std::vector<Move> tau1 = p->pseudo_legal_pawn_moves(e4);
     assert(tau1.size() ==1 );
     assert(tau1[0].raw() == Move(e4,e5).raw());
     
-    
-    p->colorBB[BLACK] |= f5_bb;
-    p->pieceTypeBB[PAWN] |= f5_bb;
-    p->pieceBySquare[f5] = B_PAWN;
-    p->colorBB[BLACK] |= d5_bb;
-    p->pieceTypeBB[PAWN] |= d5_bb;
-    p->pieceBySquare[d5] = B_PAWN;
-
+    p->put(f5, B_PAWN);
+    p->put(d5, B_PAWN);
     std::vector<Move> tau2 = p->pseudo_legal_pawn_moves(e4);
     assert(tau2.size() == 3);
     assert(tau2[0].raw() != tau2[1].raw() && tau2[1].raw() != tau2[2].raw() && tau2[0].raw() != tau2[2].raw());
     assert(tau2[0].raw() == Move(e4,f5).raw() || tau2[0].raw() == Move(e4,d5).raw() || tau2[0].raw() == Move(e4,e5).raw());
     assert(tau2[1].raw() == Move(e4,f5).raw() || tau2[1].raw() == Move(e4,d5).raw() || tau2[1].raw() == Move(e4,e5).raw());
     assert(tau2[2].raw() == Move(e4,f5).raw() || tau2[2].raw() == Move(e4,d5).raw() || tau2[2].raw() == Move(e4,e5).raw());
-    
-    p->colorBB[BLACK] |= e5_bb;
-    p->pieceTypeBB[PAWN] |= e5_bb;
-    p->pieceBySquare[e5] = B_PAWN;
+
+    p->put(e5, B_PAWN);
 
     std::vector<Move> phi = p->pseudo_legal_pawn_moves(e4);
     assert(phi.size() == 2);
@@ -758,94 +882,71 @@ public:
     assert(phi[0].raw() == Move(e4,f5).raw() || phi[0].raw() == Move(e4,d5).raw());
     assert(phi[1].raw() == Move(e4,f5).raw() || phi[1].raw() == Move(e4,d5).raw());
 
+    p->put(a2, B_PAWN);
     p->side_to_move = BLACK;
-    p->colorBB[BLACK] |= SQUARE_TO_BB(a2);
-    p->pieceTypeBB[PAWN] |= SQUARE_TO_BB(a2);
-    p->pieceBySquare[a2] = B_PAWN;
     assert(p->pseudo_legal_pawn_moves(a2).size() == 0);
 
     delete p;
 
     Position* p2 = new Position();
     p2->side_to_move = BLACK;
-    p2->colorBB[BLACK] |= SQUARE_TO_BB(e5);
-    p2->colorBB[WHITE] |= SQUARE_TO_BB(e4);
-    p2->pieceTypeBB[PAWN] |= SQUARE_TO_BB(e4);
-    p2->pieceTypeBB[PAWN] |= SQUARE_TO_BB(e5);
-    p2->pieceBySquare[e4] = W_PAWN;
-    p2->pieceBySquare[e5] = B_PAWN;
-    
+    p2->put(e4, W_PAWN);
+    p2->put(e5, B_PAWN);
+
     assert(p->pseudo_legal_pawn_moves(e5).size() == 0);
 
     delete p2;
 
   }
-  static void pseudo_legal_direction_moves_test() {
+  static void pseudo_legal_direction_squares_test() {
     // Check propogate
     // Check we cant capture own pieces
     // Check we capture first enemy piece
     { // Capture enemy piece
       Position* p = new Position();
       // White king on e4
+      p->put(e4, W_PAWN);
       p->side_to_move = WHITE;
-      p->colorBB[WHITE] |= SQUARE_TO_BB(e4);
-      p->pieceTypeBB[KING] |= SQUARE_TO_BB(e4);
-      p->pieceBySquare[e4] = W_KING;
 
       // Black rook on f5
-      p->colorBB[BLACK] |= SQUARE_TO_BB(f5);
-      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(f5);
-      p->pieceBySquare[f5] = B_ROOK;
+      p->put(f5, B_ROOK);
 
-      Move expected = Move(e4,f5);
-      std::vector<Move> generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,false);
-      assert(generated[0].raw() == expected.raw());
+      std::vector<Square> generated = p->pseudo_legal_direction_squares(e4,NORTH_EAST,false);
+      assert(generated[0] == f5);
       delete p;
     }
     { // Capture enemy piece  w/ propogation -> Only capture first piece
       Position* p = new Position();
       // White king on e4
       p->side_to_move = WHITE;
-      p->colorBB[WHITE] |= SQUARE_TO_BB(e4);
-      p->pieceTypeBB[KING] |= SQUARE_TO_BB(e4);
-      p->pieceBySquare[e4] = W_KING;
-      
+      p->put(e4, W_KING);
+
       // Black rook on g6
-      p->colorBB[BLACK] |= SQUARE_TO_BB(g6);
-      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(g6);
-      p->pieceBySquare[g6] = B_ROOK;
+      p->put(g6, B_ROOK);
 
       // Black rook on h7
-      p->colorBB[BLACK] |= SQUARE_TO_BB(h7);
-      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(h7);
-      p->pieceBySquare[h7] = B_ROOK;
+      p->put(h7, B_ROOK);
 
-      Move g6_move = Move(e4,g6);
-      Move f5_move = Move(e4,f5);
-      std::vector<Move> prop_generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,true);
-      std::vector<Move> no_prop_generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,false);
+      std::vector<Square> prop_generated = p->pseudo_legal_direction_squares(e4,NORTH_EAST,true);
+      std::vector<Square> no_prop_generated = p->pseudo_legal_direction_squares(e4,NORTH_EAST,false);
       assert(no_prop_generated.size() == 1);
-      assert(no_prop_generated[0].raw() == f5_move.raw());
+      assert(no_prop_generated[0] == f5);
       assert(prop_generated.size() == 2);
-      assert(prop_generated[0].raw() == f5_move.raw());
-      assert(prop_generated[1].raw() == g6_move.raw());
+      assert(prop_generated[0] == f5);
+      assert(prop_generated[1] == g6);
       delete p;
     }
     { // CANT capture own piece
       Position* p = new Position();
       // White king on e4
       p->side_to_move = WHITE;
-      p->colorBB[WHITE] |= SQUARE_TO_BB(e4);
-      p->pieceTypeBB[KING] |= SQUARE_TO_BB(e4);
-      p->pieceBySquare[e4] = W_KING;
+      p->put(e4, W_KING);
       // White rook on g6
-      p->colorBB[WHITE] |= SQUARE_TO_BB(g6);
-      p->pieceTypeBB[ROOK] |= SQUARE_TO_BB(g6);
-      p->pieceBySquare[g6] = W_ROOK;
+      p->put(g6, W_ROOK);
 
-      std::vector<Move> generated = p->pseudo_legal_direction_moves(e4,NORTH_EAST,true);
+      std::vector<Square> generated = p->pseudo_legal_direction_squares(e4,NORTH_EAST,true);
       assert(generated.size() == 1);
-      assert(generated[0].raw() == Move(e4,g5).raw());
+      assert(generated[0] == Square(e4 + NORTH_EAST));
 
       delete p;
     }
@@ -857,5 +958,6 @@ public:
 
 int main( int argc, char** argv ) {
   PositionTests::unit_tests();
+  PositionTests::integration_tests();
   return 0;
 }
