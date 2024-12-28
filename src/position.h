@@ -68,7 +68,7 @@ class Position {
     Piece             pieceBySquare[SQUARE_LIMIT];
     Square            en_passant_target_square = NO_SQUARE;
     Color             side_to_move = WHITE;
-    uint8_t           castleRightMask = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE );
+    uint8_t           castleRightMask = (WHITE_CASTLE | BLACK_CASTLE);
     uint8_t           half_move_clock = 0;
     uint16_t          full_move_clock = 0; 
 
