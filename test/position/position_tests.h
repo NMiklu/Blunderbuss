@@ -62,6 +62,7 @@ public:
   static void make_move_test();
   static void pseudo_legal_pawn_moves_test();
   static void pseudo_legal_direction_squares_test();
+  static void pseudo_legal_castle_moves_test();
 
 
 };

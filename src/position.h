@@ -53,11 +53,15 @@ class Position {
 
     Bitboard pseudo_legal_direction_bitboard(Square sq, Compass dir, bool propogate) const;
     std::vector<Square> pseudo_legal_direction_squares(Square sq, Compass dir, bool propagate) const;
-    std::vector<Move> pseudo_legal_normal_moves(Square sq) const;
-    std::vector<Move> pseudo_legal_pawn_moves(Square sq) const;
+
+
+    std::vector<Move> pseudo_legal_normal_moves(Square sq) const; // Simple From-To moves
+    std::vector<Move> pseudo_legal_pawn_moves(Square sq) const; // Non-promote pawn moves
+
+    // Special Moves
     std::vector<Move> pseudo_legal_promo_moves(Square sq) const;
     std::vector<Move> pseudo_legal_ep_moves(Square sq) const;
-    std::vector<Move> pseudo_legal_castle_moves(Square sq) const;
+    std::vector<Move> pseudo_legal_castle_moves() const;
 
     static bool pseudo_legal_move_is_legal(const Position& pos, const Move& m);
 
@@ -70,7 +74,7 @@ class Position {
     Color             side_to_move = WHITE;
     uint8_t           castleRightMask = (WHITE_CASTLE | BLACK_CASTLE);
     uint8_t           half_move_clock = 0;
-    uint16_t          full_move_clock = 0; 
+    uint16_t          full_move_clock = 1; // Always start on the first move :O
 
   #ifdef POSITION_TEST
     friend class PositionTests;

@@ -465,44 +465,49 @@ std::vector<Move> Position::pseudo_legal_normal_moves(Square sq) const {
   */
   std::vector<Square> destination_squares;
   Piece pieceAtSq = this->piece_on(sq);
-  Compass dirs[16] = {NORTH,EAST,SOUTH,WEST,NORTH_EAST,NORTH_WEST,SOUTH_EAST,SOUTH_WEST,
-                      NORTH_NORTH_EAST, NORTH_NORTH_WEST,
-                      NORTH_EAST_EAST, SOUTH_EAST_EAST,
-                      SOUTH_SOUTH_EAST, SOUTH_SOUTH_WEST,
-                      SOUTH_WEST_WEST, NORTH_WEST_WEST};
+  Compass diagonals[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST};
+  Compass slides[4]    = {NORTH,EAST,SOUTH,WEST};
+  Compass knights[8]   = { NORTH_NORTH_EAST, NORTH_NORTH_WEST,
+                           NORTH_EAST_EAST,  SOUTH_EAST_EAST,
+                           SOUTH_SOUTH_EAST, SOUTH_SOUTH_WEST,
+                           SOUTH_WEST_WEST,  NORTH_WEST_WEST  };
   switch(Position::type(pieceAtSq)) {
     case PAWN:
       return Position::pseudo_legal_pawn_moves(sq);
     case KNIGHT:
-      for( int i = 8; i < 16; i++ ) {
-        // Since we dont expect more than 1 move
-        std::vector<Square> tau = Position::pseudo_legal_direction_squares(sq,dirs[i],false);
+      for( int i = 0; i < 8; i++ ) {
+        // Since we dont expect more than 1 move per direction
+        std::vector<Square> tau = Position::pseudo_legal_direction_squares(sq,knights[i],false);
         if( tau.size() != 0 ) destination_squares.push_back(tau[0]);
       }
       break;
     case BISHOP:
-      for( int i = 4; i < 8; i++ ) {
-        std::vector<Square> gamma = Position::pseudo_legal_direction_squares(sq,dirs[i],true);
+      for( int i = 0; i < 4; i++ ) {
+        std::vector<Square> gamma = Position::pseudo_legal_direction_squares(sq,diagonals[i],true);
         destination_squares.insert(destination_squares.end(),gamma.begin(),gamma.end());
       }
       break;
     case ROOK:
       for( int i = 0; i < 4; i++ ) {
-        std::vector<Square> gamma = Position::pseudo_legal_direction_squares(sq,dirs[i],true);
+        std::vector<Square> gamma = Position::pseudo_legal_direction_squares(sq,slides[i],true);
         destination_squares.insert(destination_squares.end(),gamma.begin(),gamma.end());
       }
       break;
     case QUEEN:
-      for( int i = 0; i < 8; i++ ) {
-        std::vector<Square> gamma = Position::pseudo_legal_direction_squares(sq,dirs[i],true);
+      for( int i = 0; i < 4; i++ ) {
+        std::vector<Square> gamma = Position::pseudo_legal_direction_squares(sq,slides[i],true);
+        std::vector<Square> delta = Position::pseudo_legal_direction_squares(sq,diagonals[i],true);
         destination_squares.insert(destination_squares.end(),gamma.begin(),gamma.end());
+        destination_squares.insert(destination_squares.end(),delta.begin(),delta.end());
       }
       break;
     case KING:
-      for( int i = 0; i < 8; i++ ) {
+      for( int i = 0; i < 4; i++ ) {
         // Only expect at most 1 move
-        std::vector<Square> tau = Position::pseudo_legal_direction_squares(sq,dirs[i],false);
+        std::vector<Square> tau = Position::pseudo_legal_direction_squares(sq,slides[i],false);
+        std::vector<Square> upsilon = Position::pseudo_legal_direction_squares(sq,diagonals[i],false);
         if( tau.size() != 0 ) destination_squares.push_back(tau[0]);
+        if( upsilon.size() != 0 ) destination_squares.push_back(upsilon[0]);
       }
       break;
     default:
@@ -745,11 +750,13 @@ std::vector<Move> Position::pseudo_legal_ep_moves( Square sq ) const {
   }
   return moves;
 }
-std::vector<Move> Position::pseudo_legal_castle_moves( Square sq ) const {
+std::vector<Move> Position::pseudo_legal_castle_moves() const {
+  /* Generates pseudo legal castle moves for color = <this->to_attack()> */
   std::vector<Move> moves;
+  bool is_white = this->to_attack() == WHITE;
+  Square sq = is_white ? e1:e8;
   PieceType pt = Position::type(this->piece_on(sq));
-  if( pt == KING && (sq == e1 || sq == e8) ) {
-    bool is_white = this->to_attack() == WHITE;
+  if( pt == KING ) {
     // Check if pieces exist on 'travel' squares
     // Check if castle squares are attacked
     // Check if king is currently in check (cant castle out of check)
@@ -809,7 +816,7 @@ void Position::make_move(const Move& m) {
   this->remove(m.final_square());
   this->en_passant_target_square = NO_SQUARE;
   this->half_move_clock += 1;
-  if( this->to_attack() == WHITE ) this->full_move_clock+=1;
+  if( this->to_attack() == BLACK ) this->full_move_clock+=1;
   // Capture -> Halfmove is now 0
   if(this->pieceBySquare[m.final_square()] != NO_PIECE) this->half_move_clock = 0;
   switch(flag) {
@@ -851,9 +858,12 @@ void Position::make_move(const Move& m) {
       this->remove(rook_init_sq); // Remove ROOK
       this->put(m.final_square(), king_t ); // Put KING
       this->put(rook_final_sq, rook_t ); // Put ROOK
+      this->revoke_castle_right( (this->to_attack() == WHITE ? WHITE_CASTLE : BLACK_CASTLE) );
       break;
     }
     case Move::EN_PASSANT:
+      // Need to remove ep pawn
+      this->remove( Square(m.final_square() + (this->to_attack() == WHITE ? SOUTH : NORTH)) );
       this->put(m.final_square(),piece_to_move);
       break;
     case Move::PROMOTE_KNIGHT:

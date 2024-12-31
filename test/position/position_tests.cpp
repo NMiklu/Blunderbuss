@@ -73,7 +73,7 @@ Position* PositionTests::starting_position() {
   p->side_to_move = WHITE;
   p->castleRightMask = (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE | BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
   p->half_move_clock = 0;
-  p->full_move_clock = 0;
+  p->full_move_clock = 1;
   p->en_passant_target_square = NO_SQUARE;
 
   PositionTests::mock_put(p, a2, W_PAWN);
@@ -120,9 +120,9 @@ Position* PositionTests::kings_position() {
   PositionTests::mock_put(p, e8, B_KING);
   p->side_to_move = WHITE;
   p->en_passant_target_square = NO_SQUARE;
-  p->castleRightMask = ( WHITE_CASTLE | BLACK_CASTLE );
+  p->castleRightMask = 0; // No castle rights
   p->half_move_clock = 0;
-  p->full_move_clock = 0;
+  p->full_move_clock = 1;
   return p;
 }
 
@@ -170,13 +170,13 @@ void PositionTests::move_generation_tests() {
   // pseudo_legal_direction_bitboard
   // pseudo_legal_promo_moves
   // pseudo_legal_ep_moves
-  // pseudo_legal_castle_moves
 
   PositionTests::move_direction_before_edge_sq_test();
   PositionTests::move_direction_before_edge_bb_test();
   PositionTests::make_move_test();
   PositionTests::pseudo_legal_pawn_moves_test();
   PositionTests::pseudo_legal_direction_squares_test();
+  PositionTests::pseudo_legal_castle_moves_test();
 }
 
 /* Translation Tests */
@@ -910,9 +910,11 @@ void PositionTests::move_direction_before_edge_bb_test() {
 
 
 /* Move Generation */
-void PositionTests::make_move_test() { // TODO finish
+void PositionTests::make_move_test() {
   // Test Every Flag (Promotions, En Passant, Castle, and No flag)
   {
+    // Ensure en passant target square resets
+    // Ensure full move clock and half move clock update
     Position* p = PositionTests::starting_position();
     p->make_move(Move(e2,e4));
     assert(p->en_passant_target_square == e3);
@@ -920,7 +922,7 @@ void PositionTests::make_move_test() { // TODO finish
     assert(p->half_move_clock == 0);
     p->make_move(Move(e7,e5));
     assert(p->en_passant_target_square == e6);
-    assert(p->full_move_clock == 1);
+    assert(p->full_move_clock == 2);
     assert(p->half_move_clock == 0);
     p->make_move(Move(g1,f3));
     assert(p->en_passant_target_square == NO_SQUARE);
@@ -928,9 +930,225 @@ void PositionTests::make_move_test() { // TODO finish
     assert(p->half_move_clock == 1);
     delete p;
   }
-  {
-    Position* p = PositionTests::starting_position();
+  { // NO FLAG -> Rook move removes castle rights
+    Position* p = PositionTests::kings_position();
+    p->castleRightMask = (WHITE_CASTLE | BLACK_CASTLE);
+    p->side_to_move = WHITE;
 
+    PositionTests::mock_put(p,a1, W_ROOK);
+    PositionTests::mock_put(p,h1, W_ROOK);
+    PositionTests::mock_put(p,a8, B_ROOK);
+    PositionTests::mock_put(p,h8, B_ROOK);
+
+    p->make_move(Move(a1,a4));
+    assert((p->castleRightMask & (WHITE_LONG_CASTLE)) == 0);
+
+    p->make_move(Move(a8,a5));
+    assert((p->castleRightMask & (BLACK_LONG_CASTLE)) == 0);
+
+    p->make_move(Move(h1,h4));
+    assert((p->castleRightMask & (WHITE_SHORT_CASTLE)) == 0);
+
+    p->make_move(Move(h8,h5));
+    assert((p->castleRightMask & (BLACK_SHORT_CASTLE)) == 0);
+
+    delete p;
+  }
+  { // NO FLAG -> King move revokes relevant castle rights
+    Position* p = PositionTests::kings_position();
+    p->side_to_move = WHITE;
+    p->castleRightMask = (WHITE_CASTLE | BLACK_CASTLE);
+
+    p->make_move(Move(e1,e2));
+    assert((p->castleRightMask & (WHITE_CASTLE)) == 0);
+
+    p->make_move(Move(e8,e7));
+    assert((p->castleRightMask & (BLACK_CASTLE)) == 0);
+  }
+  { // Flag = CASTLE
+    Position* p = PositionTests::kings_position();
+    p->castleRightMask = (WHITE_CASTLE);
+    PositionTests::mock_put(p,a1,W_ROOK);
+    PositionTests::mock_put(p,h1,W_ROOK);
+
+    p->side_to_move = WHITE;
+    p->make_move(Move(e1,g1, Move::CASTLE));
+    assert(p->pieceBySquare[g1] == W_KING);
+    assert(p->pieceBySquare[f1] == W_ROOK);
+    assert(p->pieceBySquare[h1] == NO_PIECE);
+    assert(p->pieceBySquare[e1] == NO_PIECE);
+    assert((p->castleRightMask & (WHITE_CASTLE)) == 0);
+    delete p;
+
+    Position* q = PositionTests::kings_position();
+    p->castleRightMask = (BLACK_CASTLE);
+    PositionTests::mock_put(p,a8,B_ROOK);
+    PositionTests::mock_put(p,h8,B_ROOK);
+    p->side_to_move = BLACK;
+    p->make_move(Move(e8,g8, Move::CASTLE));
+    assert(p->pieceBySquare[g8] == B_KING);
+    assert(p->pieceBySquare[f8] == B_ROOK);
+    assert(p->pieceBySquare[h8] == NO_PIECE);
+    assert(p->pieceBySquare[e8] == NO_PIECE);
+    assert((p->castleRightMask & (BLACK_CASTLE)) == 0);
+    delete q;
+  }
+  { // En passant flag
+    Position* p = PositionTests::kings_position();
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,c5,W_PAWN);
+    PositionTests::mock_put(p,b5,B_PAWN);
+    p->en_passant_target_square = b6;
+    p->make_move(Move(c5,b6,Move::EN_PASSANT));
+
+    assert(p->pieceBySquare[b5] == NO_PIECE);
+    assert(p->pieceBySquare[c5] == NO_PIECE);
+    assert(p->pieceBySquare[b6] == W_PAWN);
+    assert(p->en_passant_target_square == NO_SQUARE);
+    assert((p->colorBB[WHITE] & p->pieceTypeBB[PAWN]) == SQUARE_TO_BB(b6));
+    delete p;
+  }
+  { // Promote knight flag
+    Position* p = PositionTests::kings_position();
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,b7,W_PAWN);
+    p->make_move(Move(b7,b8,Move::PROMOTE_KNIGHT));
+    assert(p->pieceBySquare[b8] == W_KNIGHT);
+    assert( (p->colorBB[WHITE] & p->pieceTypeBB[KNIGHT]) == SQUARE_TO_BB(b8) );
+    assert( p->pieceTypeBB[PAWN] == EMPTY_BB );
+    delete p;
+  }
+  { // Promote bishop flag
+    Position* p = PositionTests::kings_position();
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,b7,W_PAWN);
+    p->make_move(Move(b7,b8,Move::PROMOTE_BISHOP));
+    assert(p->pieceBySquare[b8] == W_BISHOP);
+    assert( (p->colorBB[WHITE] & p->pieceTypeBB[BISHOP]) == SQUARE_TO_BB(b8) );
+    assert( p->pieceTypeBB[PAWN] == EMPTY_BB );
+    delete p;
+  }
+  { // Promote rook flag
+    Position* p = PositionTests::kings_position();
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,b7,W_PAWN);
+    p->make_move(Move(b7,b8,Move::PROMOTE_ROOK));
+    assert(p->pieceBySquare[b8] == W_ROOK);
+    assert( (p->colorBB[WHITE] & p->pieceTypeBB[ROOK]) == SQUARE_TO_BB(b8) );
+    assert( p->pieceTypeBB[PAWN] == EMPTY_BB );
+    delete p;
+  }
+  { // Promote queen flag
+    Position* p = PositionTests::kings_position();
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,b7,W_PAWN);
+    p->make_move(Move(b7,b8,Move::PROMOTE_QUEEN));
+    assert(p->pieceBySquare[b8] == W_QUEEN);
+    assert( (p->colorBB[WHITE] & p->pieceTypeBB[QUEEN]) == SQUARE_TO_BB(b8) );
+    assert( p->pieceTypeBB[PAWN] == EMPTY_BB );
+    delete p;
+  }
+}
+void PositionTests::pseudo_legal_castle_moves_test() {
+  { // No castle rights (WHITE AND BLACK)
+    Position* p = PositionTests::kings_position();
+    p->castleRightMask = 0;
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,h1, W_ROOK);
+    PositionTests::mock_put(p,a1, W_ROOK);
+    PositionTests::mock_put(p,h8, B_ROOK);
+    PositionTests::mock_put(p,a8, B_ROOK);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+
+    p->side_to_move = BLACK;
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    delete p;
+  }
+  { // Blocked short castle
+    Position* p = PositionTests::kings_position();
+    p->castleRightMask = (WHITE_SHORT_CASTLE | BLACK_SHORT_CASTLE);
+    // White
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,h1, W_ROOK);
+    PositionTests::mock_put(p,g1, W_KNIGHT);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_put(p, f1, W_BISHOP );
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_remove(p,g1);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    // Black
+    p->side_to_move = BLACK;
+    PositionTests::mock_put(p,h8, B_ROOK);
+    PositionTests::mock_put(p,g8, B_KNIGHT);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_put(p, f8, B_BISHOP );
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_remove(p,g8);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+
+    delete p;
+  }
+  { // Unblocked Short Castle
+    Position* p = PositionTests::kings_position();
+    p->castleRightMask = (WHITE_SHORT_CASTLE | BLACK_SHORT_CASTLE);
+    PositionTests::mock_put(p,h1, W_ROOK);
+    assert(p->pseudo_legal_castle_moves().size() == 1 );
+
+    PositionTests::mock_put(p,h8, B_ROOK);
+    assert(p->pseudo_legal_castle_moves().size() == 1 );
+    delete p;
+  }
+  { // Blocked long castle
+    Position* p = PositionTests::kings_position();
+    p->castleRightMask = (WHITE_LONG_CASTLE | BLACK_LONG_CASTLE);
+    // WHITE
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,a1, W_ROOK);
+    PositionTests::mock_put(p,b1, W_KNIGHT);
+    PositionTests::mock_put(p,c1, W_BISHOP);
+    PositionTests::mock_put(p,d1, W_QUEEN);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_remove(p,b1);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_remove(p,c1);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    // BLACK
+    p->side_to_move = BLACK;
+    PositionTests::mock_put(p,a8, B_ROOK);
+    PositionTests::mock_put(p,b8, B_KNIGHT);
+    PositionTests::mock_put(p,c8, B_BISHOP);
+    PositionTests::mock_put(p,d8, B_QUEEN);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_remove(p,b8);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    PositionTests::mock_remove(p,c8);
+    assert(p->pseudo_legal_castle_moves().size() == 0 );
+    delete p;
+  }
+  { // Unblocked long castle
+    Position* p = PositionTests::kings_position();
+    p->castleRightMask = (WHITE_LONG_CASTLE | BLACK_LONG_CASTLE);
+    // WHITE
+    p->side_to_move = WHITE;
+    PositionTests::mock_put(p,a1, W_ROOK);
+    assert(p->pseudo_legal_castle_moves().size() == 1 );
+    // BLACK
+    p->side_to_move = BLACK;
+    PositionTests::mock_put(p,a8, B_ROOK);
+    assert(p->pseudo_legal_castle_moves().size() == 1 );
+    delete p;
+  }
+  { // Unblocked long and short castle
+    Position* p = PositionTests::kings_position();
+    PositionTests::mock_put(p,a1, W_ROOK);
+    PositionTests::mock_put(p,h1, W_ROOK);
+    PositionTests::mock_put(p,a8, B_ROOK);
+    PositionTests::mock_put(p,h8, B_ROOK);
+    p->castleRightMask = (WHITE_CASTLE | BLACK_CASTLE);
+    p->side_to_move = WHITE;
+    assert(p->pseudo_legal_castle_moves().size() == 2);
+    p->side_to_move = BLACK;
+    assert(p->pseudo_legal_castle_moves().size() == 2);
     delete p;
   }
 }
