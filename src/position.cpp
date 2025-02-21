@@ -885,3 +885,62 @@ void Position::make_move(const Move& m) {
   }
   this->side_to_move = this->to_defend();
 }
+
+
+std::vector<Move> Position::legal_moves( Square sq ) const {
+  std::vector<Move> pseudos;
+  if( Position::color( this->piece_on( sq ) ) != this->to_attack() ) return pseudos;
+  switch( Position::type(this->piece_on( sq )) ) {
+    case PAWN:
+      std::vector<Move> non_promo_moves = Position::pseudo_legal_pawn_moves( sq );
+      std::vector<Move> promo_moves = Position::pseudo_legal_promo_moves( sq );
+      std::vector<Move> ep_moves = Position::pseudo_legal_ep_moves( sq );
+      pseudos.reserve( non_promo_moves.size() + promo_moves.size() + ep_moves.size() );
+      pseudos.insert(pseudos.end(), non_promo_moves.begin(), non_promo_moves.end());
+      pseudos.insert(pseudos.end(), promo_moves.begin(),promo_moves.end());
+      pseudos.insert(pseudos.end(), ep_moves.begin(),ep_moves.end());
+      break;
+    case KNIGHT:
+    case BISHOP:
+    case ROOK:
+    case QUEEN:
+      std::vector<Move> normals = Position::pseudo_legal_normal_moves( sq );
+      pseudos = normals;
+      break;
+    case KING:
+      std::vector<Move> king_moves = Position::pseudo_legal_normal_moves( sq );
+      std::vector<Move> castle     = Position::pseudo_legal_castle_moves();
+      pseudos.reserve(king_moves.size() + castle.size() );
+      pseudos.insert(pseudos.end(), king_moves.begin(), king_moves.end());
+      pseudos.insert(pseudos.end(), castle.begin(), castle.end());
+      break;
+    default:
+      break;
+  }
+  std::vector<Move> tau.reserve( pseudos.size() );
+  for( size_t i = 0; i < pseudos.size(); i++ ) {
+    if( Position::pseudo_legal_move_is_legal((*this), pseudos[i] ) ) {
+      tau.push_back( pseudos[i] );
+    }
+  }
+
+  return tau;
+}
+
+
+std::vector<Move> Position::legal_moves() const {
+  std::vector<Move> legal_actions;
+
+  for( Square sq = (Square)0; sq < SQUARE_LIMIT; sq = (Square)(sq+1) ) {
+    std::vector<Move> phi = this->legal_moves( sq );
+    for( size_t i = 0; i < phi.size(); i++ ) {
+      legal_actions.push_back(phi[i]);
+    }
+  }
+
+  return legal_actions;
+}
+
+
+
+

@@ -46,7 +46,8 @@ class Position {
     uint16_t fullmove() const;
 
     void make_move(const Move& m);
-    //std::vector<Move> legal_moves() const;
+    std::vector<Move> legal_moves( Square sq ) const;
+    std::vector<Move> legal_moves() const;
 
   private:
 
@@ -62,6 +63,7 @@ class Position {
     std::vector<Move> pseudo_legal_promo_moves(Square sq) const;
     std::vector<Move> pseudo_legal_ep_moves(Square sq) const;
     std::vector<Move> pseudo_legal_castle_moves() const;
+
 
     static bool pseudo_legal_move_is_legal(const Position& pos, const Move& m);
 
