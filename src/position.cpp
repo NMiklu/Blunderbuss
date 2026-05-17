@@ -7,6 +7,7 @@
 #include <cstring> //memset
 #include <vector>
 #include <cstdint>
+#include <algorithm>
 
 
 Position::Position() {
@@ -217,6 +218,7 @@ uint16_t Position::fullmove() const {
 }
 
 
+
 bool Position::fen(std::string fen_string ) {
   /* TODO UPDATE !!!!*/ 
   /* 
@@ -234,7 +236,7 @@ bool Position::fen(std::string fen_string ) {
           ' ' <Halfmove clock>
           ' ' <Fullmove counter>
   */
-  std::vector<std::string> fen_tokens = util::tokenize(fen_string, ' ');
+  std::vector<std::string> fen_tokens = util::tokenize(fen_string,' ');
   /*
     <Piece Placement> ::=
         <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'
@@ -245,7 +247,64 @@ bool Position::fen(std::string fen_string ) {
     <white piece> ::= 'P' | 'N' | 'B' | 'R' | 'Q' | 'K' 
     <black piece> ::= 'p' | 'n' | 'b' | 'r' | 'q' | 'k' 
   */
-  
+  std::vector<std::string> piece_placement = util::tokenize(fen_tokens[0],'/');
+  for(std::vector<std::string>::iterator rank_itr = piece_placement.begin(); rank_itr != piece_placement.end(); rank_itr++) {
+    Square sq_ref = a8;
+    const int ascii_numerical_offset = 48;
+    for( std::string::iterator file_itr = rank_itr->begin(); file_itr != rank_itr->end(); file_itr++ ) {
+      if( util::is_numeric(*file_itr) ) {
+        sq_ref = static_cast<Square>(sq_ref + EAST*(static_cast<int>(*file_itr) - ascii_numerical_offset) );
+      } else {
+        Piece to_be_placed = NO_PIECE;
+        switch (*file_itr) {
+          case 'P':
+            to_be_placed = W_PAWN;
+            break;
+          case 'N':
+            to_be_placed = W_KNIGHT;
+            break;
+          case 'B':
+            to_be_placed = W_BISHOP;
+            break;
+          case 'R':
+            to_be_placed = W_ROOK;
+            break;
+          case 'Q':
+            to_be_placed = W_QUEEN;
+            break;
+          case 'K':
+            to_be_placed = W_KING;
+            break;
+          case 'p':
+            to_be_placed = B_PAWN;
+            break;
+          case 'n':
+            to_be_placed = B_KNIGHT; 
+            break;
+          case 'b':
+            to_be_placed = B_BISHOP;
+            break;
+          case 'r':
+            to_be_placed = B_ROOK;
+            break;
+          case 'q':
+            to_be_placed = B_QUEEN;
+            break;
+          case 'k':
+            to_be_placed = B_KING;
+            break;
+          default:
+            // ERROR
+            std::cerr << "ERROR: Positon::fen(std::string) -> <Piece Placement> invalid format";
+            break;
+        }
+        this->put(sq_ref, to_be_placed);
+        sq_ref = (Square)(sq_ref + EAST);
+      }
+    }
+  }
+
+
   
   /*
     <Side to move> ::= {'w' | 'b'}
