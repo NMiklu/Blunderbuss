@@ -1,5 +1,6 @@
 #include "representation.h"
 #include "position.h"
+#include "util.h"
 #include <string>
 #include <sstream>
 #include <cmath>
@@ -233,7 +234,7 @@ bool Position::fen(std::string fen_string ) {
           ' ' <Halfmove clock>
           ' ' <Fullmove counter>
   */
-
+  std::vector<std::string> fen_tokens = util::tokenize(fen_string, ' ');
   /*
     <Piece Placement> ::=
         <rank8>'/'<rank7>'/'<rank6>'/'<rank5>'/'
@@ -574,7 +575,7 @@ Bitboard Position::pseudo_legal_direction_bitboard(Square sq, Compass dir, bool 
   /*
     Creates a bitboard of pseudo legal moves squares given the direction
     from the square specified by <sq> where the direction is propagated
-    until a edge is hit. 
+    until an edge is hit. 
     (only propogates the direction if <propagate> is true
      else it'll only move in that direction once)
     -> Does not check if move will put own king in check.

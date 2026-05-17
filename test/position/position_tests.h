@@ -2,7 +2,6 @@
 #define POSITION_TEST
 
 #include "../../src/position.h"
-#include "../../src/representation.h"
 #include <iostream>
 
 class PositionTests {
